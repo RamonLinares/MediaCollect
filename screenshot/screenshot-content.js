@@ -58,8 +58,10 @@
       <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
       </svg>
-      <span>${message}</span>
     `;
+    const span = document.createElement('span');
+    span.textContent = message;
+    toast.appendChild(span);
     document.body.appendChild(toast);
     setTimeout(() => {
       toast.remove();

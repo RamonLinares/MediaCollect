@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "MediaCollect - Video & Screenshot Suite",
-  "version": "1.1.0",
-  "description": "Download any video from X (Twitter) & Threads in high quality (1080p, 720p, 480p) directly from posts or extension popup.",
+  "version": "1.2.0",
+  "description": "Download HD videos from X & Threads, capture custom selections, elements, and full-page screenshots with an interactive editor.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

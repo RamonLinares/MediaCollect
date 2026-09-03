@@ -239,10 +239,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const safeVideoUrl = TwitVidUtils.sanitizeUrl(videoUrl);
+    if (!safeVideoUrl) return;
+
     const previewWrap = document.createElement('div');
     previewWrap.className = 'video-preview-wrap';
     previewWrap.innerHTML = `
-      <video class="preview-video-element" src="${videoUrl}" controls autoplay playsinline></video>
+      <video class="preview-video-element" src="${safeVideoUrl}" controls autoplay playsinline></video>
       <div class="preview-header">
         <span>🎬 Playing Preview</span>
         <button type="button" class="btn-close-preview">✕ Close</button>
@@ -305,13 +308,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Build thumbnail HTML with fallback
       let thumbHtml = '';
-      if (v.poster) {
-        thumbHtml = `<img class="card-thumbnail" src="${v.poster}" alt="Thumbnail" referrerpolicy="no-referrer" loading="lazy" />`;
-      } else if (previewUrl) {
-        thumbHtml = `<video class="card-thumbnail" src="${previewUrl}#t=0.1" preload="metadata" muted playsinline></video>`;
+      const safePoster = TwitVidUtils.sanitizeUrl(v.poster);
+      const safePreviewUrl = TwitVidUtils.sanitizeUrl(previewUrl);
+
+      if (safePoster) {
+        thumbHtml = `<img class="card-thumbnail" src="${safePoster}" alt="Thumbnail" referrerpolicy="no-referrer" loading="lazy" />`;
+      } else if (safePreviewUrl) {
+        thumbHtml = `<video class="card-thumbnail" src="${safePreviewUrl}#t=0.1" preload="metadata" muted playsinline></video>`;
       } else {
         thumbHtml = `<svg class="card-thumbnail" viewBox="0 0 24 24" style="padding: 16px; fill: #536471;"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11zm6 3v5l4.5-2.5L10 9.5z"/></svg>`;
       }
+
+      const safeAuthorTitle = TwitVidUtils.escapeHtml(authorTitle);
+      const safeTweetText = TwitVidUtils.escapeHtml(tweetText);
 
       card.innerHTML = `
         <div class="card-top">
@@ -323,8 +332,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>
           <div class="card-info">
-            <div class="card-author-title">${authorTitle}</div>
-            <div class="card-text">${tweetText}</div>
+            <div class="card-author-title">${safeAuthorTitle}</div>
+            <div class="card-text">${safeTweetText}</div>
             <button type="button" class="btn-preview-toggle">
               ${SVG_PLAY_SM}
               <span>Preview</span>

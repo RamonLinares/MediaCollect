@@ -361,9 +361,12 @@
         url.includes('threads.com')
       ) {
         const clone = response.clone();
-        clone.text().then(text => {
-          inspectApiResponse(text);
-        }).catch(() => {});
+        (async () => {
+          try {
+            const text = await clone.text();
+            inspectApiResponse(text);
+          } catch (_) {}
+        })();
       }
     } catch (_) {}
     return response;

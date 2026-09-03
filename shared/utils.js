@@ -291,31 +291,55 @@ function mergeAndDeduplicateVideos(listA = [], listB = []) {
   return results.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
 
+/**
+ * Safely escapes HTML special characters to prevent cross-site scripting (XSS).
+ * @param {string} str - Raw string
+ * @returns {string} HTML-escaped string
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Validates and sanitizes a URL to ensure safe protocols (http, https, data, blob).
+ * Rejects javascript: or unsafe schemes.
+ * @param {string} url - Candidate URL string
+ * @returns {string} Sanitized URL or empty string if invalid
+ */
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (/^(https?:|data:image\/|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  return '';
+}
+
+const utilsExport = {
+  extractPostId,
+  extractTweetId,
+  formatBitrate,
+  getResolutionParts,
+  formatVariantLabel,
+  parseVideoVariants,
+  normalizeAuthorInfo,
+  createVideoFilename,
+  formatDuration,
+  mergeAndDeduplicateVideos,
+  escapeHtml,
+  sanitizeUrl
+};
+
 // Export for environments that use module or global
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    extractPostId,
-    extractTweetId,
-    formatBitrate,
-    getResolutionParts,
-    formatVariantLabel,
-    parseVideoVariants,
-    normalizeAuthorInfo,
-    createVideoFilename,
-    formatDuration,
-    mergeAndDeduplicateVideos
-  };
+  module.exports = utilsExport;
 } else if (typeof globalThis !== 'undefined') {
-  globalThis.TwitVidUtils = {
-    extractPostId,
-    extractTweetId,
-    formatBitrate,
-    getResolutionParts,
-    formatVariantLabel,
-    parseVideoVariants,
-    normalizeAuthorInfo,
-    createVideoFilename,
-    formatDuration,
-    mergeAndDeduplicateVideos
-  };
+  globalThis.TwitVidUtils = utilsExport;
+  globalThis.MediaCollectUtils = utilsExport;
 }

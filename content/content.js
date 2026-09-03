@@ -46,7 +46,10 @@
       document.body.appendChild(toast);
     }
 
-    toast.innerHTML = `${isSuccess ? SVG_CHECK : SVG_DOWNLOAD} <span>${message}</span>`;
+    toast.innerHTML = isSuccess ? SVG_CHECK : SVG_DOWNLOAD;
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = message;
+    toast.appendChild(msgSpan);
     toast.classList.add('is-visible');
 
     if (toastTimeout) clearTimeout(toastTimeout);
@@ -657,11 +660,12 @@
         let cached = videoCatalog.get(data.tweetId);
 
         if (!cached || !cached.variants || cached.variants.length === 0) {
-          const p = resolveTweetMedia(data.tweetId, data).then(res => {
-            if (res) {
-              visibleVideos.push(res);
-            }
-          });
+          const p = (async () => {
+            try {
+              const res = await resolveTweetMedia(data.tweetId, data);
+              if (res) visibleVideos.push(res);
+            } catch (_) {}
+          })();
           resolutionPromises.push(p);
         } else {
           visibleVideos.push({

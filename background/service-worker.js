@@ -155,6 +155,41 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   } catch (_) {}
 });
 
+// Minimum interval to respect Chrome's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND (2/sec)
+let lastCaptureTimestamp = 0;
+const MIN_CAPTURE_INTERVAL_MS = 550;
+
+/**
+ * Captures the visible tab with quota throttling and exponential retry
+ */
+async function captureTabWithQuotaHandling(maxRetries = 5) {
+  let delay = 600;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const elapsed = Date.now() - lastCaptureTimestamp;
+    if (elapsed < MIN_CAPTURE_INTERVAL_MS) {
+      await new Promise(r => setTimeout(r, MIN_CAPTURE_INTERVAL_MS - elapsed));
+    }
+
+    try {
+      lastCaptureTimestamp = Date.now();
+      const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+      return dataUrl;
+    } catch (err) {
+      const isQuotaError = err.message && (
+        err.message.includes('MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND') ||
+        err.message.includes('quota')
+      );
+      if (isQuotaError && attempt < maxRetries) {
+        console.warn(`[MediaCollect] Capture quota pause: retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
+        await new Promise(r => setTimeout(r, delay));
+        delay = Math.round(delay * 1.5);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 // Message Passing Router
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const { type, payload } = message || {};
@@ -224,38 +259,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
     return true;
   }
-
-// Minimum interval to respect Chrome's MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND (2/sec)
-let lastCaptureTimestamp = 0;
-const MIN_CAPTURE_INTERVAL_MS = 550;
-
-async function captureTabWithQuotaHandling(maxRetries = 5) {
-  let delay = 600;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const elapsed = Date.now() - lastCaptureTimestamp;
-    if (elapsed < MIN_CAPTURE_INTERVAL_MS) {
-      await new Promise(r => setTimeout(r, MIN_CAPTURE_INTERVAL_MS - elapsed));
-    }
-
-    try {
-      lastCaptureTimestamp = Date.now();
-      const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
-      return dataUrl;
-    } catch (err) {
-      const isQuotaError = err.message && (
-        err.message.includes('MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND') ||
-        err.message.includes('quota')
-      );
-      if (isQuotaError && attempt < maxRetries) {
-        console.warn(`[MediaCollect] Capture quota pause: retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
-        await new Promise(r => setTimeout(r, delay));
-        delay = Math.round(delay * 1.5);
-        continue;
-      }
-      throw err;
-    }
-  }
-}
 
   if (type === 'CAPTURE_VISIBLE_TAB') {
     (async () => {
