@@ -50,23 +50,25 @@ A fast, lightweight, and modern Google Chrome extension (Manifest V3) combining 
 ## Technical Architecture (Manifest V3)
 
 ```
-TwitVidDown/
-├── manifest.json                  # Manifest V3 configuration
+MediaCollect/
+├── manifest.json                  # Manifest V3 configuration & permissions
 ├── background/
-│   └── service-worker.js          # Handles downloads, tab storage, and tab captures
+│   └── service-worker.js          # Downloads, tab management & capture dispatch
 ├── content/
-│   ├── main-world.js              # Intercepts GraphQL/API video payloads
-│   ├── content.js                 # DOM video detection & in-post buttons
-│   └── content.css                # Styling for video download buttons & popovers
+│   ├── main-world.js              # Network & GraphQL stream interceptor
+│   ├── content.js                 # In-post download button injection & video detector
+│   └── content.css                # Neumorphic styling for download buttons & popovers
 ├── screenshot/
-│   ├── screenshot-content.js      # Selection, Element Picker, Full Page Stitching & Modal
-│   └── screenshot.css             # Glassmorphic styling for overlays and preview modal
+│   ├── screenshot-content.js      # Selection, Element Picker, Full Page Stitcher & Modal
+│   ├── screenshot.css             # Neumorphic Bone White styling for editor & overlays
+│   ├── studio.html                # Standalone full-browser tab Studio editor
+│   └── studio.js                  # Multi-tab canvas editor & clipboard paste engine
 ├── popup/
-│   ├── popup.html                 # Dual-mode dashboard (Videos & Screenshot)
-│   ├── popup.css                  # Modern dark glassmorphic styling
-│   └── popup.js                   # Tab controller and capture dispatcher
+│   ├── popup.html                 # Dual-mode dashboard (Videos & Screenshots)
+│   ├── popup.css                  # Tactile Neumorphic Bone White design system
+│   └── popup.js                   # Popup controller & state management
 ├── shared/
-│   └── utils.js                   # Shared parsing, formatters, and filename sanitizers
+│   └── utils.js                   # Formatters, URL parsers, and filename sanitizers
 ├── CHROMEWEBSTORE.md              # Chrome Web Store metadata & documentation
 └── README.md                      # Project documentation
 ```
