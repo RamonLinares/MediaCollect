@@ -1,0 +1,1041 @@
+/* MediaCollect Extension Popup - Neumorphic Bone White Theme */
+:root {
+  /* Bone White Palette */
+  --bg-primary: #eae8e3;
+  --bg-secondary: #e4e2dc;
+  --bg-card: #eae8e3;
+  --bg-card-hover: #edebe6;
+  --bg-tile: #eae8e3;
+
+  /* Neumorphic Shadow Calculations (Dual Light & Dark) */
+  --shadow-light: #ffffff;
+  --shadow-dark: rgba(175, 169, 157, 0.55);
+  --shadow-dark-strong: rgba(158, 152, 140, 0.7);
+
+  /* Tactile Neumorphic Presets */
+  --nm-raised-lg: 7px 7px 16px var(--shadow-dark), -7px -7px 16px var(--shadow-light);
+  --nm-raised: 5px 5px 12px var(--shadow-dark), -5px -5px 12px var(--shadow-light);
+  --nm-raised-sm: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  --nm-raised-hover: 5px 5px 14px var(--shadow-dark), -5px -5px 14px var(--shadow-light);
+  --nm-pressed: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  --nm-pressed-sm: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  --nm-well: inset 4px 4px 9px var(--shadow-dark), inset -4px -4px 9px var(--shadow-light);
+
+  /* High Contrast Typography for Accessibility */
+  --text-main: #1c222b;
+  --text-secondary: #454e5e;
+  --text-muted: #697180;
+
+  /* Accents */
+  --accent-blue: #1d9bf0;
+  --accent-blue-hover: #1a8cd8;
+  --accent-blue-dark: #0c7abf;
+  --accent-blue-subtle: rgba(29, 155, 240, 0.12);
+  --accent-glow: rgba(29, 155, 240, 0.35);
+  --accent-green: #059669;
+  --accent-purple: #7c3aed;
+  --accent-orange: #ea580c;
+  --accent-red: #e11d48;
+
+  /* Subtle Crisp Border Highlights */
+  --border-light: rgba(255, 255, 255, 0.85);
+  --border-subtle: rgba(182, 176, 164, 0.25);
+  --border-active: rgba(29, 155, 240, 0.45);
+
+  /* Geometry */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 460px;
+  max-height: 620px;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background-color: var(--bg-primary);
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 4px 10px rgba(175, 169, 157, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #25a4f4 0%, #1282cb 100%);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 3px 3px 8px rgba(18, 130, 203, 0.35), -2px -2px 6px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.logo-icon {
+  width: 18px;
+  height: 18px;
+  fill: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Status Badge - Debossed Neumorphic Well */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--bg-primary);
+  box-shadow: var(--nm-pressed-sm);
+  border: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+}
+
+.status-active {
+  color: #059669;
+}
+
+.status-inactive {
+  color: #e11d48;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ==========================================================================
+   Mode Switcher Tabs - Tactile Extruded/Debossed Switch
+   ========================================================================== */
+.mode-tabs {
+  display: flex;
+  background: var(--bg-primary);
+  padding: 8px 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mode-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.mode-tab:hover {
+  color: var(--text-main);
+  box-shadow: var(--nm-raised-hover);
+  transform: translateY(-1px);
+}
+
+.mode-tab.active {
+  background: var(--bg-primary);
+  color: var(--accent-blue-dark);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--nm-pressed);
+  font-weight: 800;
+  transform: translateY(0);
+}
+
+.mode-tab.active .mode-tab-icon {
+  fill: var(--accent-blue-dark);
+  filter: drop-shadow(0 1px 2px rgba(12, 122, 191, 0.3));
+}
+
+.mode-tab-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Tab Panes */
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* View Panels */
+.view-panel {
+  padding: 14px 16px;
+  flex: 1;
+}
+
+/* ==========================================================================
+   Top Stats & Control Bar
+   ========================================================================== */
+.stats-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stat-card {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised);
+  border-radius: var(--radius-lg);
+  padding: 11px 15px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.stat-count-pill {
+  background: linear-gradient(135deg, #25a4f4 0%, #1282cb 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 5px 13px;
+  border-radius: var(--radius-full);
+  box-shadow: 2px 2px 6px rgba(18, 130, 203, 0.35), -2px -2px 6px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-text-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.stat-text-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.control-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.btn-card-action {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  color: var(--text-main);
+  padding: 10px 14px;
+}
+
+.btn-card-action:hover {
+  color: var(--accent-red);
+  box-shadow: var(--nm-raised-hover);
+  transform: translateY(-1px);
+}
+
+.btn-card-action:active {
+  box-shadow: var(--nm-pressed-sm);
+  transform: translateY(0);
+}
+
+.btn-primary-action {
+  background: linear-gradient(135deg, #25a4f4 0%, #1181cc 100%);
+  color: #ffffff;
+  padding: 10px 16px;
+  box-shadow: 3px 3px 8px rgba(17, 129, 204, 0.4), -2px -2px 6px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.btn-primary-action:hover {
+  background: linear-gradient(135deg, #3bb1fa 0%, #158ddb 100%);
+  box-shadow: 4px 4px 12px rgba(17, 129, 204, 0.5), -3px -3px 8px var(--shadow-light);
+  transform: translateY(-1px);
+}
+
+.btn-primary-action:active {
+  box-shadow: inset 2px 2px 5px rgba(10, 80, 130, 0.55), inset -1px -1px 3px rgba(255, 255, 255, 0.3);
+  transform: translateY(0);
+}
+
+.action-icon {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+/* ==========================================================================
+   Filter Chips Row - Neumorphic Badges
+   ========================================================================== */
+.filter-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.filter-chip:hover {
+  color: var(--text-main);
+  box-shadow: var(--nm-raised-hover);
+  transform: translateY(-1px);
+}
+
+.filter-chip.active {
+  background: var(--bg-primary);
+  color: var(--accent-blue-dark);
+  box-shadow: var(--nm-pressed);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-weight: 800;
+  transform: translateY(0);
+}
+
+.chip-icon {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.chip-badge-text {
+  font-size: 9.5px;
+  font-weight: 800;
+  border: 1px solid currentColor;
+  padding: 0 3px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+/* ==========================================================================
+   Inactive & Empty State Cards
+   ========================================================================== */
+.inactive-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised);
+  border-radius: var(--radius-lg);
+  padding: 26px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.inactive-icon-wrap {
+  width: 52px;
+  height: 52px;
+  background: var(--bg-primary);
+  box-shadow: var(--nm-pressed);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-light);
+}
+
+.inactive-x-icon {
+  width: 24px;
+  height: 24px;
+  fill: var(--text-main);
+}
+
+.inactive-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 7px;
+  color: var(--text-main);
+}
+
+.inactive-card p {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #25a4f4 0%, #1181cc 100%);
+  color: #ffffff;
+  box-shadow: 3px 3px 8px rgba(17, 129, 204, 0.4), -2px -2px 6px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 10px 16px;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #3bb1fa 0%, #158ddb 100%);
+  box-shadow: 4px 4px 12px rgba(17, 129, 204, 0.5), -3px -3px 8px var(--shadow-light);
+}
+
+.btn-primary:active {
+  box-shadow: inset 2px 2px 5px rgba(10, 80, 130, 0.55), inset -1px -1px 3px rgba(255, 255, 255, 0.3);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 36px 18px;
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-subtle);
+  box-shadow: var(--nm-well);
+  border-radius: var(--radius-lg);
+}
+
+.empty-icon-wrap {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-primary);
+  box-shadow: var(--nm-raised-sm);
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  color: var(--text-muted);
+}
+
+.empty-icon-wrap svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.empty-state h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.empty-state p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   Video List & Neumorphic Video Cards
+   ========================================================================== */
+.video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 440px;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-left: 2px;
+  padding-bottom: 4px;
+}
+
+/* Neumorphic Scrollbar */
+.video-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.video-list::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  box-shadow: inset 1px 1px 3px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light);
+  border-radius: 9999px;
+}
+
+.video-list::-webkit-scrollbar-thumb {
+  background: #cfcbc1;
+  border-radius: 9999px;
+  box-shadow: var(--nm-raised-sm);
+}
+
+.video-list::-webkit-scrollbar-thumb:hover {
+  background: #beb9ad;
+}
+
+/* The Main Neumorphic Card */
+.video-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised);
+  border-radius: var(--radius-lg);
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.video-card:hover {
+  box-shadow: var(--nm-raised-lg);
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+.card-top {
+  display: flex;
+  gap: 12px;
+}
+
+/* Recessed Video Thumbnail Frame */
+.card-thumbnail-wrap {
+  width: 120px;
+  height: 72px;
+  background: #11151c;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-light);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.card-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+
+.card-thumbnail-wrap:hover .card-thumbnail {
+  transform: scale(1.06);
+}
+
+.play-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  background: rgba(234, 232, 227, 0.85);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3), -1px -1px 4px rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.card-thumbnail-wrap:hover .play-overlay {
+  background: var(--accent-blue);
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 4px 12px rgba(29, 155, 240, 0.45);
+}
+
+.play-icon {
+  width: 13px;
+  height: 13px;
+  fill: var(--accent-blue-dark);
+  margin-left: 2px;
+  transition: fill 0.2s ease;
+}
+
+.card-thumbnail-wrap:hover .play-icon {
+  fill: #ffffff;
+}
+
+.card-duration {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  background: rgba(18, 22, 28, 0.85);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  flex: 1;
+}
+
+.card-author-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent-blue-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.card-text {
+  font-size: 12px;
+  color: var(--text-main);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.btn-preview-toggle {
+  align-self: flex-start;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-preview-toggle:hover {
+  color: var(--accent-blue-dark);
+  box-shadow: var(--nm-raised-hover);
+}
+
+.btn-preview-toggle:active {
+  box-shadow: var(--nm-pressed-sm);
+  color: var(--accent-blue);
+}
+
+.btn-preview-toggle svg {
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+}
+
+/* ==========================================================================
+   Resolution Quality Tiles Grid - Neumorphic Tactile Buttons
+   ========================================================================== */
+.resolution-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 3px;
+}
+
+.quality-tile {
+  flex: 1 1 72px;
+  max-width: 105px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  text-align: left;
+}
+
+.quality-tile:hover {
+  box-shadow: var(--nm-raised-hover);
+  transform: translateY(-1px);
+}
+
+.quality-tile:active {
+  box-shadow: var(--nm-pressed-sm);
+  transform: translateY(0);
+}
+
+.quality-tile-icon {
+  width: 14px;
+  height: 14px;
+  fill: var(--accent-blue-dark);
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.quality-tile-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.tile-res-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.tile-sub-title {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tile-rate-label {
+  font-size: 8.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* Best Quality Hero Tile (1080p Full HD) */
+.quality-tile.is-best {
+  background: linear-gradient(135deg, #25a4f4 0%, #1282cb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 3px 3px 8px rgba(18, 130, 203, 0.4), -2px -2px 6px var(--shadow-light);
+}
+
+.quality-tile.is-best:hover {
+  background: linear-gradient(135deg, #3cb0fb 0%, #168edc 100%);
+  box-shadow: 4px 4px 12px rgba(18, 130, 203, 0.5), -3px -3px 8px var(--shadow-light);
+}
+
+.quality-tile.is-best:active {
+  box-shadow: inset 2px 2px 5px rgba(10, 80, 130, 0.6), inset -1px -1px 3px rgba(255, 255, 255, 0.3);
+}
+
+.quality-tile.is-best .tile-res-title,
+.quality-tile.is-best .tile-sub-title,
+.quality-tile.is-best .tile-rate-label {
+  color: #ffffff;
+}
+
+.quality-tile.is-best .quality-tile-icon {
+  fill: #ffffff;
+  opacity: 1;
+}
+
+.quality-tile.is-best .tile-rate-label {
+  opacity: 0.9;
+}
+
+.star-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 15px;
+  height: 15px;
+  background: #ffffff;
+  color: #1282cb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Video Preview Player Wrap */
+.video-preview-wrap {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-well);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  margin-top: 4px;
+}
+
+.preview-video-element {
+  width: 100%;
+  border-radius: 8px;
+  max-height: 220px;
+  background: #000000;
+  outline: none;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  padding: 0 4px;
+}
+
+.btn-close-preview {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.btn-close-preview:hover {
+  color: var(--accent-red);
+  box-shadow: var(--nm-raised-hover);
+}
+
+/* ==========================================================================
+   TAB 2: SCREENSHOT MENU STYLES
+   ========================================================================== */
+.screenshot-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.screenshot-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised);
+  border-radius: var(--radius-lg);
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+  outline: none;
+}
+
+.screenshot-menu-item:hover {
+  box-shadow: var(--nm-raised-lg);
+  transform: translateY(-1px);
+}
+
+.screenshot-menu-item:active {
+  box-shadow: var(--nm-pressed);
+  transform: translateY(0);
+}
+
+.menu-item-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.menu-icon {
+  width: 20px;
+  height: 20px;
+  fill: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.icon-selection {
+  background: linear-gradient(135deg, #1d9bf0, #0a6ca8);
+  box-shadow: 2px 2px 6px rgba(29, 155, 240, 0.35), -2px -2px 6px var(--shadow-light);
+}
+
+.icon-element {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 2px 2px 6px rgba(5, 150, 105, 0.35), -2px -2px 6px var(--shadow-light);
+}
+
+.icon-visible {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  box-shadow: 2px 2px 6px rgba(124, 58, 237, 0.35), -2px -2px 6px var(--shadow-light);
+}
+
+.icon-full {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  box-shadow: 2px 2px 6px rgba(234, 88, 12, 0.35), -2px -2px 6px var(--shadow-light);
+}
+
+.menu-item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-item-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.menu-item-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.menu-item-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 9px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-pressed-sm);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+}
+
+.screenshot-tip-card {
+  margin-top: 14px;
+  padding: 13px 15px;
+  background: var(--bg-primary);
+  box-shadow: var(--nm-well);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================= */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 18px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-light);
+  box-shadow: 0 -3px 8px rgba(175, 169, 157, 0.2);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.privacy-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #059669;
+  font-weight: 700;
+}
+
+.shield-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.version-tag {
+  font-weight: 600;
+  color: var(--text-muted);
+}

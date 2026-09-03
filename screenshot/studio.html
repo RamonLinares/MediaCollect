@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediaCollect Studio</title>
+  <link rel="stylesheet" href="screenshot.css">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #eae8e3;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      box-sizing: border-box;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    /* Studio Full Viewport Layout */
+    .studio-viewport {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      background: #eae8e3;
+      position: relative;
+    }
+
+    .studio-source-title {
+      font-size: 13px;
+      color: #697180;
+      font-weight: 500;
+      max-width: 320px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .studio-tab-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #059669;
+      background: #eae8e3;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: inset 1px 1px 3px rgba(175, 169, 157, 0.4), inset -1px -1px 3px #ffffff;
+    }
+
+    .studio-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #059669;
+      box-shadow: 0 0 6px rgba(5, 150, 105, 0.6);
+    }
+
+    /* Fallback / Dropzone when no image */
+    .studio-empty-zone {
+      display: none;
+      margin: auto;
+      text-align: center;
+      padding: 40px;
+      background: #eae8e3;
+      border: 2px dashed rgba(175, 169, 157, 0.6);
+      border-radius: 18px;
+      box-shadow: 4px 4px 14px rgba(175, 169, 157, 0.4), -4px -4px 14px #ffffff;
+      color: #454e5e;
+      max-width: 460px;
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-viewport" id="studio-app">
+    <!-- Studio Header -->
+    <header class="twitvid-dialog-header">
+      <div class="twitvid-dialog-title">
+        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #1d9bf0;">
+          <path d="M12 2.5a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3.25A.75.75 0 0 1 12 2.5zm-8.25 14a.75.75 0 0 1 .75.75v3.25c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-3.25a.75.75 0 0 1 1.5 0v3.25A2.25 2.25 0 0 1 18.75 22H5.25A2.25 2.25 0 0 1 3 19.75v-3.25a.75.75 0 0 1 .75-.75z"/>
+        </svg>
+        <span style="font-weight: 800; letter-spacing: -0.01em;">MediaCollect Studio</span>
+        <span class="twitvid-meta-pill" id="twitvid-studio-dim-pill">Loading...</span>
+        <span class="studio-source-title" id="studio-source-title"></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="studio-tab-badge">
+          <span class="studio-dot"></span>
+          <span>Tab Active</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Studio Toolbar -->
+    <div class="twitvid-studio-toolbar">
+      <!-- Tool Selection Group -->
+      <div class="twitvid-toolbar-section">
+        <button type="button" class="twitvid-tool-btn" data-tool="pan" title="Pan / Navigate image">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/>
+          </svg>
+          <span>Pan</span>
+        </button>
+
+        <button type="button" class="twitvid-tool-btn" data-tool="crop" title="Crop Image">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/>
+          </svg>
+          <span>Crop</span>
+        </button>
+
+        <div class="twitvid-toolbar-sep"></div>
+
+        <button type="button" class="twitvid-tool-btn active" data-tool="pen" title="Draw Freehand">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
+          <span>Pen</span>
+        </button>
+
+        <button type="button" class="twitvid-tool-btn" data-tool="arrow" title="Draw Arrow">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+          </svg>
+          <span>Arrow</span>
+        </button>
+
+        <button type="button" class="twitvid-tool-btn" data-tool="rect" title="Draw Box / Rectangle">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/>
+          </svg>
+          <span>Box</span>
+        </button>
+
+        <button type="button" class="twitvid-tool-btn" data-tool="highlighter" title="Highlight Text / Section">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M15.24 3.76a2.5 2.5 0 0 0-3.54 0L3 12.46V19h6.54l8.7-8.7a2.5 2.5 0 0 0 0-3.54l-3-3zm-2.12 1.41a.5.5 0 0 1 .71 0l3 3a.5.5 0 0 1 0 .71l-1.29 1.3-3.71-3.71 1.29-1.3zM5 17v-3.13l7.04-7.04 3.13 3.13L8.13 17H5z"/>
+          </svg>
+          <span>Highlighter</span>
+        </button>
+
+        <button type="button" class="twitvid-tool-btn" data-tool="text" title="Add Text Annotation">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M5 4v3h5.5v12h3V7H19V4z"/>
+          </svg>
+          <span>Text</span>
+        </button>
+      </div>
+
+      <!-- Color & Stroke Selector -->
+      <div class="twitvid-toolbar-section">
+        <div class="twitvid-color-swatches">
+          <div class="twitvid-color-dot active" data-color="#f4212e" style="background: #f4212e;" title="Red"></div>
+          <div class="twitvid-color-dot" data-color="#1d9bf0" style="background: #1d9bf0;" title="Blue"></div>
+          <div class="twitvid-color-dot" data-color="#00ba7c" style="background: #00ba7c;" title="Green"></div>
+          <div class="twitvid-color-dot" data-color="#ffd400" style="background: #ffd400;" title="Yellow"></div>
+          <div class="twitvid-color-dot" data-color="#ffffff" style="background: #ffffff;" title="White"></div>
+          <div class="twitvid-color-dot" data-color="#1c222b" style="background: #1c222b;" title="Black"></div>
+        </div>
+
+        <div class="twitvid-toolbar-sep"></div>
+
+        <!-- Stroke Size -->
+        <div class="twitvid-stroke-group">
+          <button type="button" class="twitvid-stroke-btn" data-stroke="3">Thin</button>
+          <button type="button" class="twitvid-stroke-btn active" data-stroke="6">Med</button>
+          <button type="button" class="twitvid-stroke-btn" data-stroke="12">Thick</button>
+        </div>
+
+        <div class="twitvid-toolbar-sep"></div>
+
+        <!-- Zoom Controls -->
+        <div class="twitvid-zoom-group">
+          <button type="button" class="twitvid-zoom-btn" id="btn-zoom-out" title="Zoom Out">-</button>
+          <span class="twitvid-zoom-text" id="zoom-level-text" title="Click to Fit Screen">100%</span>
+          <button type="button" class="twitvid-zoom-btn" id="btn-zoom-in" title="Zoom In">+</button>
+        </div>
+
+        <div class="twitvid-toolbar-sep"></div>
+
+        <!-- Undo Button -->
+        <button type="button" class="twitvid-tool-btn" id="btn-undo" title="Undo Last Stroke (⌘Z / Ctrl+Z)">
+          <svg viewBox="0 0 24 24" class="twitvid-tool-icon">
+            <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+          </svg>
+          <span>Undo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Canvas Body / Recessed Basin -->
+    <main class="twitvid-dialog-body" id="twitvid-canvas-body">
+      <div class="studio-empty-zone" id="studio-empty-zone">
+        <h3>No Image in Buffer</h3>
+        <p>You can paste an image directly using <kbd class="twitvid-kbd-key">⌘V</kbd> or <kbd class="twitvid-kbd-key">Ctrl+V</kbd>.</p>
+      </div>
+
+      <div class="twitvid-canvas-wrapper" id="twitvid-canvas-wrap">
+        <canvas class="twitvid-main-canvas" id="twitvid-studio-canvas"></canvas>
+
+        <!-- Interactive Crop Overlay Mask -->
+        <div class="twitvid-crop-mask" id="twitvid-crop-mask" style="display: none;">
+          <div class="twitvid-crop-box" id="twitvid-crop-box">
+            <div class="twitvid-crop-handle nw" data-dir="nw"></div>
+            <div class="twitvid-crop-handle ne" data-dir="ne"></div>
+            <div class="twitvid-crop-handle se" data-dir="se"></div>
+            <div class="twitvid-crop-handle sw" data-dir="sw"></div>
+            <div class="twitvid-crop-actions-bar">
+              <button type="button" class="twitvid-btn twitvid-btn-secondary" id="btn-apply-crop" style="padding: 5px 12px; font-size: 11.5px;">
+                ✓ Apply Crop
+              </button>
+              <button type="button" class="twitvid-btn twitvid-btn-ghost" id="btn-cancel-crop" style="padding: 5px 12px; font-size: 11.5px;">
+                ✕ Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Studio Footer -->
+    <footer class="twitvid-dialog-footer">
+      <div style="font-size: 12px; color: #697180; display: flex; align-items: center; gap: 14px;">
+        <span>💡 <strong>Shortcut:</strong> Press <kbd class="twitvid-kbd-key">⌘Z</kbd> to Undo • Scroll/pinch to Zoom • <kbd class="twitvid-kbd-key">⌘V</kbd> to Paste</span>
+      </div>
+      <div class="twitvid-btn-group">
+        <button type="button" class="twitvid-btn twitvid-btn-secondary twitvid-btn-copy" id="btn-copy">
+          <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: currentColor;">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+          </svg>
+          <span>Copy to Clipboard</span>
+        </button>
+        <button type="button" class="twitvid-btn twitvid-btn-primary twitvid-btn-save" id="btn-save">
+          <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: currentColor;">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+          </svg>
+          <span>Save Image</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="studio.js"></script>
+</body>
+</html>

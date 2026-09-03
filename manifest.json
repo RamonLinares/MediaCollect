@@ -1,0 +1,109 @@
+{
+  "manifest_version": 3,
+  "name": "MediaCollect - Video & Screenshot Suite",
+  "version": "1.1.0",
+  "description": "Download any video from X (Twitter) & Threads in high quality (1080p, 720p, 480p) directly from posts or extension popup.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "MediaCollect - Download Video & Screenshots"
+  },
+  "permissions": [
+    "downloads",
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://x.com/*",
+    "https://*.x.com/*",
+    "https://twitter.com/*",
+    "https://*.twitter.com/*",
+    "https://threads.net/*",
+    "https://*.threads.net/*",
+    "https://threads.com/*",
+    "https://*.threads.com/*",
+    "https://video.twimg.com/*",
+    "https://cdn.syndication.twimg.com/*",
+    "https://*.cdninstagram.com/*",
+    "https://*.fbcdn.net/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://*.x.com/*",
+        "https://twitter.com/*",
+        "https://*.twitter.com/*",
+        "https://threads.net/*",
+        "https://*.threads.net/*",
+        "https://threads.com/*",
+        "https://*.threads.com/*"
+      ],
+      "js": ["content/main-world.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://*.x.com/*",
+        "https://twitter.com/*",
+        "https://*.twitter.com/*",
+        "https://threads.net/*",
+        "https://*.threads.net/*",
+        "https://threads.com/*",
+        "https://*.threads.com/*"
+      ],
+      "js": [
+        "shared/utils.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle",
+      "world": "ISOLATED"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/content.css",
+        "screenshot/screenshot.css",
+        "screenshot/studio.html",
+        "screenshot/studio.js",
+        "icons/icon-16.png",
+        "icons/icon-32.png",
+        "icons/icon-48.png",
+        "icons/icon-128.png"
+      ],
+      "matches": [
+        "https://x.com/*",
+        "https://*.x.com/*",
+        "https://twitter.com/*",
+        "https://*.twitter.com/*",
+        "https://threads.net/*",
+        "https://*.threads.net/*",
+        "https://threads.com/*",
+        "https://*.threads.com/*"
+      ]
+    }
+  ]
+}

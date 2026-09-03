@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediaCollect - Video & Screenshot Suite</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" class="logo-icon">
+            <path d="M12 2.5a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3.25A.75.75 0 0 1 12 2.5zm-8.25 14a.75.75 0 0 1 .75.75v3.25c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-3.25a.75.75 0 0 1 1.5 0v3.25A2.25 2.25 0 0 1 18.75 22H5.25A2.25 2.25 0 0 1 3 19.75v-3.25a.75.75 0 0 1 .75-.75z"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">MediaCollect</span>
+          <span class="brand-subtitle">Videos & Screenshots</span>
+        </div>
+      </div>
+      <div id="status-badge" class="status-badge status-active">
+        <span class="status-dot"></span>
+        <span id="status-text">Ready</span>
+      </div>
+    </header>
+
+    <!-- Top Mode Switcher Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-tab="videos">
+        <svg viewBox="0 0 24 24" class="mode-tab-icon">
+          <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11zm6 3v5l4.5-2.5L10 9.5z"/>
+        </svg>
+        <span>Videos</span>
+      </button>
+      <button class="mode-tab" data-tab="screenshot">
+        <svg viewBox="0 0 24 24" class="mode-tab-icon">
+          <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+        </svg>
+        <span>Screenshot</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: VIDEOS -->
+    <div id="tab-videos" class="tab-pane active">
+      <!-- Inactive State (Not on X or Threads) -->
+      <div id="inactive-view" class="view-panel" style="display: none;">
+        <div class="inactive-card">
+          <div class="inactive-icon-wrap">
+            <svg viewBox="0 0 24 24" class="inactive-x-icon">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </div>
+          <h3>Video Downloader Active on X & Threads</h3>
+          <p>Open <strong>x.com</strong> or <strong>threads.net</strong> to download videos, or switch to the <strong>Screenshot</strong> tab to capture this page.</p>
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <button id="btn-open-x" class="btn btn-primary" style="flex: 1;">
+              <span>Open X.com</span>
+            </button>
+            <button id="btn-open-threads" class="btn btn-card-action" style="flex: 1;">
+              <span>Open Threads</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active State (On X or Threads) -->
+      <div id="active-view" class="view-panel" style="display: none;">
+        <!-- Top Stats & Control Bar -->
+        <div class="stats-control-bar">
+          <div class="stat-card">
+            <span id="video-count-badge" class="stat-count-pill">0</span>
+            <div class="stat-text-group">
+              <div class="stat-text-title">Videos Found</div>
+              <div class="stat-text-sub">Ready to download</div>
+            </div>
+          </div>
+          <div class="control-actions">
+            <button id="btn-clear" class="btn btn-card-action" title="Clear list">
+              <svg viewBox="0 0 24 24" class="action-icon">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              <span>Clear</span>
+            </button>
+            <button id="btn-refresh" class="btn btn-primary-action" title="Scan timeline for videos">
+              <svg viewBox="0 0 24 24" class="action-icon refresh-icon">
+                <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+              </svg>
+              <span>Scan Feed</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-chips-row">
+          <button class="filter-chip active" data-filter="all">
+            <svg viewBox="0 0 24 24" class="chip-icon">
+              <path d="M4 4h7v7H4zm10 0h7v7h-7zM4 14h7v7H4zm10 0h7v7h-7z"/>
+            </svg>
+            <span>All</span>
+          </button>
+          <button class="filter-chip" data-filter="hd">
+            <span class="chip-badge-text">HD</span>
+            <span>HD Quality</span>
+          </button>
+          <button class="filter-chip" data-filter="short">
+            <svg viewBox="0 0 24 24" class="chip-icon">
+              <path d="M7 2v11h3v9l7-12h-4l4-8z"/>
+            </svg>
+            <span>Short Clips</span>
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11zm6 3v5l4.5-2.5L10 9.5z"/>
+            </svg>
+          </div>
+          <h4>No videos found on screen</h4>
+          <p>Scroll down your feed or open a post with a video, then click Scan Feed.</p>
+          <button id="btn-empty-rescan" class="btn btn-primary-action btn-sm" style="margin-top: 14px;">
+            <span>Scan Feed Now</span>
+          </button>
+        </div>
+
+        <!-- Videos List Container -->
+        <div id="video-list" class="video-list"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SCREENSHOT -->
+    <div id="tab-screenshot" class="tab-pane" style="display: none;">
+      <div class="view-panel">
+        <div class="screenshot-menu">
+          <!-- Option 1: Capture Selection -->
+          <button type="button" class="screenshot-menu-item" id="btn-snap-selection">
+            <div class="menu-item-icon-wrap icon-selection">
+              <svg viewBox="0 0 24 24" class="menu-icon">
+                <path d="M3 3h5v2H5v3H3V3zm18 0v5h-2V5h-3V3h5zM3 21v-5h2v3h3v2H3zm18 0h-5v-2h3v-3h2v5zM9 9h6v6H9V9z"/>
+              </svg>
+            </div>
+            <div class="menu-item-content">
+              <div class="menu-item-title">Capture Selection</div>
+              <div class="menu-item-sub">Drag a rectangle to crop any section</div>
+            </div>
+            <div class="menu-item-badge">Crop Area</div>
+          </button>
+
+          <!-- Option 2: Capture DOM Element -->
+          <button type="button" class="screenshot-menu-item" id="btn-snap-element">
+            <div class="menu-item-icon-wrap icon-element">
+              <svg viewBox="0 0 24 24" class="menu-icon">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V15h-2v4.93A8 8 0 0 1 4.07 13H9v-2H4.07A8 8 0 0 1 11 4.07V9h2V4.07A8 8 0 0 1 19.93 11H15v2h4.93A8 8 0 0 1 13 19.93z"/>
+              </svg>
+            </div>
+            <div class="menu-item-content">
+              <div class="menu-item-title">Capture DOM Element</div>
+              <div class="menu-item-sub">Hover and click any element to capture</div>
+            </div>
+            <div class="menu-item-badge">Inspector</div>
+          </button>
+
+          <!-- Option 3: Capture Visible Part -->
+          <button type="button" class="screenshot-menu-item" id="btn-snap-visible">
+            <div class="menu-item-icon-wrap icon-visible">
+              <svg viewBox="0 0 24 24" class="menu-icon">
+                <path d="M21 3H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H3V5h18v14zm-10-7h8v5h-8z"/>
+              </svg>
+            </div>
+            <div class="menu-item-content">
+              <div class="menu-item-title">Capture Visible Part</div>
+              <div class="menu-item-sub">Instant snapshot of the visible screen</div>
+            </div>
+            <div class="menu-item-badge">Visible</div>
+          </button>
+
+          <!-- Option 4: Capture Entire Page -->
+          <button type="button" class="screenshot-menu-item" id="btn-snap-full">
+            <div class="menu-item-icon-wrap icon-full">
+              <svg viewBox="0 0 24 24" class="menu-icon">
+                <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+              </svg>
+            </div>
+            <div class="menu-item-content">
+              <div class="menu-item-title">Capture Entire Page</div>
+              <div class="menu-item-sub">Scrolls and stitches full-length page</div>
+            </div>
+            <div class="menu-item-badge">Full Page</div>
+          </button>
+        </div>
+
+        <div class="screenshot-tip-card">
+          <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4;">
+            ✨ Captures open in an interactive preview modal on the page where you can <strong>1-click Copy to Clipboard</strong> or <strong>Save PNG</strong>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="privacy-note">
+        <svg viewBox="0 0 24 24" class="shield-icon">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+        </svg>
+        <span>100% Client-side & Secure</span>
+      </div>
+      <span class="version-tag">v1.2.0</span>
+    </footer>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
