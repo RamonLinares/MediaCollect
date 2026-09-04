@@ -32,14 +32,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   let activeFilter = 'all';
 
   // SVG Icons
-  const SVG_DOWNLOAD_TILE = `
-    <svg viewBox="0 0 24 24" class="quality-tile-icon">
+  const SVG_DOWNLOAD_SM = `
+    <svg viewBox="0 0 24 24" class="btn-icon">
       <path d="M12 2.5a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3.25A.75.75 0 0 1 12 2.5zm-8.25 14a.75.75 0 0 1 .75.75v3.25c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75v-3.25a.75.75 0 0 1 1.5 0v3.25A2.25 2.25 0 0 1 18.75 22H5.25A2.25 2.25 0 0 1 3 19.75v-3.25a.75.75 0 0 1 .75-.75z"/>
     </svg>
   `;
 
   const SVG_CHECK_SM = `
-    <svg viewBox="0 0 24 24" class="quality-tile-icon">
+    <svg viewBox="0 0 24 24" class="btn-icon">
       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
     </svg>
   `;
@@ -51,8 +51,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   `;
 
   const SVG_PLAY_SM = `
-    <svg viewBox="0 0 24 24">
+    <svg viewBox="0 0 24 24" class="btn-icon">
       <path d="M8 5v14l11-7z"/>
+    </svg>
+  `;
+
+  const SVG_CLOSE_SM = `
+    <svg viewBox="0 0 24 24" class="btn-icon">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+    </svg>
+  `;
+
+  const SVG_SPINNER = `
+    <svg viewBox="0 0 24 24" class="btn-icon spin">
+      <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/>
     </svg>
   `;
 
@@ -184,13 +196,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   /**
    * Triggers download of a video variant
    */
-  async function downloadVariant(variant, record, tileBtn) {
+  async function downloadVariant(variant, record, btn) {
     if (!variant?.url) return;
 
     const label = TwitVidUtils.formatVariantLabel(variant);
-    const originalContent = tileBtn.innerHTML;
-    tileBtn.disabled = true;
-    tileBtn.style.opacity = '0.7';
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.style.opacity = '0.85';
+    btn.innerHTML = `${SVG_SPINNER}<span>Downloading...</span>`;
 
     try {
       await chrome.runtime.sendMessage({
@@ -204,30 +217,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
 
-      const iconEl = tileBtn.querySelector('.quality-tile-icon');
-      if (iconEl) {
-        iconEl.outerHTML = SVG_CHECK_SM;
-      }
+      btn.classList.add('is-success');
+      btn.innerHTML = `${SVG_CHECK_SM}<span>Saved!</span>`;
       setTimeout(() => {
-        tileBtn.disabled = false;
-        tileBtn.style.opacity = '1';
-        tileBtn.innerHTML = originalContent;
+        btn.disabled = false;
+        btn.classList.remove('is-success');
+        btn.style.opacity = '1';
+        btn.innerHTML = originalContent;
       }, 2500);
     } catch (err) {
       console.error('[MediaCollect] Download error:', err);
-      tileBtn.disabled = false;
-      tileBtn.style.opacity = '1';
-      tileBtn.innerHTML = originalContent;
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.innerHTML = originalContent;
     }
   }
 
   /**
    * Toggles inline video preview player in a card
    */
-  function toggleVideoPreview(card, videoUrl) {
+  function toggleVideoPreview(card, videoUrl, previewBtn) {
     document.querySelectorAll('.video-preview-wrap').forEach(el => {
       const vid = el.querySelector('video');
       if (vid) vid.pause();
+      const parentCard = el.closest('.video-card');
+      if (parentCard && parentCard !== card) {
+        const otherBtn = parentCard.querySelector('.btn-card-preview');
+        if (otherBtn) {
+          otherBtn.classList.remove('is-active');
+          otherBtn.innerHTML = `${SVG_PLAY_SM}<span>Preview</span>`;
+        }
+      }
       if (el.parentElement !== card) el.remove();
     });
 
@@ -236,6 +256,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vid = existingPreview.querySelector('video');
       if (vid) vid.pause();
       existingPreview.remove();
+      if (previewBtn) {
+        previewBtn.classList.remove('is-active');
+        previewBtn.innerHTML = `${SVG_PLAY_SM}<span>Preview</span>`;
+      }
       return;
     }
 
@@ -258,10 +282,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vid = previewWrap.querySelector('video');
       if (vid) vid.pause();
       previewWrap.remove();
+      if (previewBtn) {
+        previewBtn.classList.remove('is-active');
+        previewBtn.innerHTML = `${SVG_PLAY_SM}<span>Preview</span>`;
+      }
     });
 
-    const grid = card.querySelector('.resolution-grid');
-    card.insertBefore(previewWrap, grid);
+    const controls = card.querySelector('.card-controls');
+    if (controls) {
+      card.insertBefore(previewWrap, controls);
+    } else {
+      card.appendChild(previewWrap);
+    }
+
+    if (previewBtn) {
+      previewBtn.classList.add('is-active');
+      previewBtn.innerHTML = `${SVG_CLOSE_SM}<span>Close</span>`;
+    }
   }
 
   /**
@@ -344,6 +381,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const safeAuthorTitle = TwitVidUtils.escapeHtml(authorTitle);
       const safeTweetText = TwitVidUtils.escapeHtml(tweetText);
 
+      // Build options for quality select dropdown (defaulting to max quality = index 0)
+      let selectOptionsHtml = '';
+      if (variants.length === 0) {
+        selectOptionsHtml = `<option value="" disabled selected>Streams resolving...</option>`;
+      } else {
+        selectOptionsHtml = variants.map((variant, index) => {
+          const isBest = (index === 0);
+          const tag = isBest ? ' (★ Max)' : (variant.rateLabel ? ` • ${variant.rateLabel}` : '');
+          const label = `${variant.resTitle || 'MP4'} ${variant.subTitle || 'Video'}${tag}`;
+          return `<option value="${index}" ${isBest ? 'selected' : ''}>${TwitVidUtils.escapeHtml(label)}</option>`;
+        }).join('');
+      }
+
       card.innerHTML = `
         <div class="card-top">
           <div class="card-thumbnail-wrap" title="Click to Preview Video">
@@ -356,13 +406,26 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="card-info">
             <div class="card-author-title">${safeAuthorTitle}</div>
             <div class="card-text">${safeTweetText}</div>
-            <button type="button" class="btn-preview-toggle">
-              ${SVG_PLAY_SM}
-              <span>Preview</span>
-            </button>
           </div>
         </div>
-        <div class="resolution-grid"></div>
+        <div class="card-controls">
+          <button type="button" class="btn-card-preview" title="Preview video">
+            ${SVG_PLAY_SM}
+            <span>Preview</span>
+          </button>
+          <div class="quality-select-wrap">
+            <select class="quality-select" aria-label="Select Video Quality">
+              ${selectOptionsHtml}
+            </select>
+            <svg class="select-chevron" viewBox="0 0 24 24">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </div>
+          <button type="button" class="btn-card-download" title="Download selected quality" ${variants.length === 0 ? 'disabled' : ''}>
+            ${SVG_DOWNLOAD_SM}
+            <span>Download</span>
+          </button>
+        </div>
       `;
 
       // Fallback if image fails to load (e.g. anti-hotlinking)
@@ -379,58 +442,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
-      // Thumbnail preview click
+      // Preview toggle button & thumbnail click
+      const previewBtn = card.querySelector('.btn-card-preview');
       const thumbWrap = card.querySelector('.card-thumbnail-wrap');
+
+      function handlePreviewToggle(e) {
+        e.stopPropagation();
+        if (previewUrl) {
+          toggleVideoPreview(card, previewUrl, previewBtn);
+        }
+      }
+
       if (previewUrl) {
-        thumbWrap.addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleVideoPreview(card, previewUrl);
-        });
-      }
-
-      // Preview toggle button click
-      const previewBtn = card.querySelector('.btn-preview-toggle');
-      if (previewUrl) {
-        previewBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleVideoPreview(card, previewUrl);
-        });
+        previewBtn.addEventListener('click', handlePreviewToggle);
+        thumbWrap.addEventListener('click', handlePreviewToggle);
       } else {
-        previewBtn.style.display = 'none';
+        previewBtn.disabled = true;
+        previewBtn.style.opacity = '0.5';
       }
 
-      const gridWrap = card.querySelector('.resolution-grid');
+      // Download button click with selected quality
+      const downloadBtn = card.querySelector('.btn-card-download');
+      const selectEl = card.querySelector('.quality-select');
 
-      if (variants.length === 0) {
-        gridWrap.innerHTML = `<span style="font-size: 11px; color: var(--text-muted); padding: 6px;">Streams resolving... Click Scan Feed.</span>`;
-      } else {
-        variants.forEach((variant, index) => {
-          const tile = document.createElement('button');
-          tile.type = 'button';
-          const isBest = (index === 0);
-          tile.className = `quality-tile ${isBest ? 'is-best' : ''}`;
-
-          const starBadgeHtml = isBest ? `<span class="star-badge">★</span>` : '';
-          const rateLabelHtml = variant.rateLabel ? `<span class="tile-rate-label">${variant.rateLabel}</span>` : '';
-
-          tile.innerHTML = `
-            ${starBadgeHtml}
-            ${SVG_DOWNLOAD_TILE}
-            <div class="quality-tile-content">
-              <span class="tile-res-title">${variant.resTitle || 'MP4'}</span>
-              <span class="tile-sub-title">${variant.subTitle || 'Video'}</span>
-              ${rateLabelHtml}
-            </div>
-          `;
-
-          tile.addEventListener('click', (e) => {
-            e.stopPropagation();
-            downloadVariant(variant, v, tile);
-          });
-
-          gridWrap.appendChild(tile);
-        });
-      }
+      downloadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const selectedIdx = parseInt(selectEl.value, 10);
+        const selectedVariant = (!isNaN(selectedIdx) && variants[selectedIdx]) ? variants[selectedIdx] : variants[0];
+        if (selectedVariant) {
+          downloadVariant(selectedVariant, v, downloadBtn);
+        }
+      });
 
       videoList.appendChild(card);
 
@@ -461,6 +503,19 @@ document.addEventListener('DOMContentLoaded', async () => {
               const textEl = card.querySelector('.card-text');
               if (textEl) textEl.textContent = data.tweetText;
               v.tweetText = data.tweetText;
+            }
+            if (variants.length === 0 && data.variants && data.variants.length > 0) {
+              v.variants = data.variants;
+              const newVariants = TwitVidUtils.parseVideoVariants(data.variants);
+              if (newVariants.length > 0) {
+                selectEl.innerHTML = newVariants.map((varItem, idx) => {
+                  const isBest = (idx === 0);
+                  const tag = isBest ? ' (★ Max)' : (varItem.rateLabel ? ` • ${varItem.rateLabel}` : '');
+                  const label = `${varItem.resTitle || 'MP4'} ${varItem.subTitle || 'Video'}${tag}`;
+                  return `<option value="${idx}" ${isBest ? 'selected' : ''}>${TwitVidUtils.escapeHtml(label)}</option>`;
+                }).join('');
+                downloadBtn.disabled = false;
+              }
             }
             if (tab?.id) {
               chrome.runtime.sendMessage({
