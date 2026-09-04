@@ -497,22 +497,230 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!tab?.id) return;
 
           textGroup.classList.add('jump-active');
-          setTimeout(() => textGroup.classList.remove('jump-active'), 500);
 
+          const payload = {
+            tweetId: v.tweetId,
+            authorHandle: v.authorHandle,
+            authorName: v.authorName,
+            tweetText: v.tweetText,
+            poster: v.poster,
+            platform: v.platform || (isThreadsDomain ? 'Threads' : 'X')
+          };
+
+          let scrolled = false;
+
+          // 1. Send message to content script
           try {
-            await chrome.tabs.sendMessage(tab.id, {
+            const resp = await chrome.tabs.sendMessage(tab.id, {
               type: 'SCROLL_TO_POST',
-              payload: {
-                tweetId: v.tweetId,
-                authorHandle: v.authorHandle,
-                authorName: v.authorName,
-                tweetText: v.tweetText,
-                poster: v.poster
-              }
+              payload
             });
-          } catch (err) {
-            console.warn('[MediaCollect] Scroll to post message error:', err);
+            if (resp && resp.success) {
+              scrolled = true;
+            }
+          } catch (_) {}
+
+          // 2. Direct script execution fallback (works even on tabs opened before extension update)
+          if (!scrolled) {
+            try {
+              const results = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (data) => {
+                  const isThreads = data.platform === 'Threads' || location.hostname.includes('threads');
+
+                  function resolvePostContainer(el) {
+                    if (!el) return null;
+                    if (isThreads) {
+                      return el.closest('div[data-pressable-container="true"]') ||
+                             el.closest('article') ||
+                             el.closest('div[role="article"]') ||
+                             el.closest('[data-twitvid-post-id]') ||
+                             el;
+                    }
+                    return el.closest('article[data-testid="tweet"]') ||
+                           el.closest('article') ||
+                           el.closest('div[data-testid="cellInnerDiv"]') ||
+                           el.closest('[data-twitvid-post-id]') ||
+                           el;
+                  }
+
+                  let target = null;
+                  const tweetId = data.tweetId;
+
+                  // A. Tagged post ID
+                  if (tweetId) {
+                    const cleanId = String(tweetId).replace(/^threads_/, '');
+                    target = document.querySelector(`[data-twitvid-post-id="${tweetId}"], [data-twitvid-post-id="${cleanId}"]`);
+                  }
+
+                  // B. Link match
+                  if (!target && tweetId && !String(tweetId).startsWith('vid_')) {
+                    const cleanId = String(tweetId).replace(/^threads_/, '');
+                    if (!isThreads) {
+                      const links = document.querySelectorAll(`a[href*="/status/${cleanId}"], a[href*="${cleanId}"]`);
+                      for (const l of links) {
+                        const p = resolvePostContainer(l);
+                        if (p) { target = p; break; }
+                      }
+                      if (!target) {
+                        const dataEl = document.querySelector(`[data-tweet-id="${cleanId}"]`);
+                        if (dataEl) target = resolvePostContainer(dataEl);
+                      }
+                      if (!target && window.location.pathname.includes(cleanId)) {
+                        target = document.querySelector('article[data-testid="tweet"]');
+                      }
+                    } else {
+                      const links = document.querySelectorAll(`a[href*="/post/${cleanId}"], a[href*="/t/${cleanId}"], a[href*="${cleanId}"]`);
+                      for (const l of links) {
+                        const p = resolvePostContainer(l);
+                        if (p) { target = p; break; }
+                      }
+                    }
+                  }
+
+                  // C. Media poster match
+                  if (!target && data.poster) {
+                    try {
+                      const filename = data.poster.split('?')[0].split('/').pop();
+                      if (filename && filename.length > 5) {
+                        const m = document.querySelector(`img[src*="${filename}"], video[poster*="${filename}"]`);
+                        if (m) target = resolvePostContainer(m);
+                      }
+                    } catch (_) {}
+                  }
+
+                  // D. Words match from caption
+                  if (!target && data.tweetText && data.tweetText.length > 6) {
+                    const words = data.tweetText
+                      .replace(/https?:\/\/\S+/g, '')
+                      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+                      .split(/\s+/)
+                      .filter(w => w.length >= 4);
+
+                    const selector = isThreads
+                      ? 'div[data-pressable-container="true"], article, div[role="article"]'
+                      : 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
+                    const posts = Array.from(document.querySelectorAll(selector));
+
+                    if (words.length >= 2) {
+                      const topWords = words.slice(0, 4).map(w => w.toLowerCase());
+                      for (const p of posts) {
+                        const t = (p.innerText || '').toLowerCase();
+                        if (topWords.filter(w => t.includes(w)).length >= Math.min(2, topWords.length)) {
+                          target = p;
+                          break;
+                        }
+                      }
+                    }
+
+                    if (!target) {
+                      const snippet = data.tweetText.trim().slice(0, 25);
+                      for (const p of posts) {
+                        if ((p.innerText || '').includes(snippet)) {
+                          target = p;
+                          break;
+                        }
+                      }
+                    }
+                  }
+
+                  // E. Author handle match
+                  if (!target && data.authorHandle) {
+                    const h = data.authorHandle.replace(/^@/, '').toLowerCase();
+                    const selector = isThreads
+                      ? 'div[data-pressable-container="true"], article, div[role="article"]'
+                      : 'article[data-testid="tweet"]';
+                    const posts = document.querySelectorAll(selector);
+                    for (const p of posts) {
+                      const link = p.querySelector(`a[href*="/${h}"]`);
+                      if (link || (p.innerText && p.innerText.toLowerCase().includes(`@${h}`))) {
+                        if (p.querySelector('video') || p.querySelector('img')) {
+                          target = p;
+                          break;
+                        }
+                      }
+                    }
+                  }
+
+                  if (target) {
+                    // Scroll parent overflow containers if present
+                    try {
+                      let parent = target.parentElement;
+                      while (parent && parent !== document.body && parent !== document.documentElement) {
+                        const style = window.getComputedStyle(parent);
+                        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                          const parentRect = parent.getBoundingClientRect();
+                          const elRect = target.getBoundingClientRect();
+                          const relTop = elRect.top - parentRect.top;
+                          parent.scrollTo({
+                            top: parent.scrollTop + relTop - (parent.clientHeight / 2) + (elRect.height / 2),
+                            behavior: 'smooth'
+                          });
+                        }
+                        parent = parent.parentElement;
+                      }
+                    } catch (_) {}
+
+                    // Window scroll calculation
+                    try {
+                      const rect = target.getBoundingClientRect();
+                      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                      const targetY = scrollTop + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+                      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+                    } catch (_) {}
+
+                    // Native scrollIntoView
+                    try {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                    } catch (_) {
+                      try { target.scrollIntoView(true); } catch (_) {}
+                    }
+
+                    // Apply high-visibility pulse highlight
+                    const prevOutline = target.style.outline;
+                    const prevShadow = target.style.boxShadow;
+                    const prevTransition = target.style.transition;
+                    target.style.transition = 'outline 0.2s ease, box-shadow 0.2s ease';
+                    target.style.outline = '3px solid #1d9bf0';
+                    target.style.boxShadow = '0 0 24px 8px rgba(29, 155, 240, 0.55)';
+                    setTimeout(() => {
+                      target.style.outline = prevOutline;
+                      target.style.boxShadow = prevShadow;
+                      target.style.transition = prevTransition;
+                    }, 2500);
+
+                    return { found: true };
+                  }
+
+                  return { found: false };
+                },
+                args: [payload]
+              });
+
+              if (results?.[0]?.result?.found) {
+                scrolled = true;
+              }
+            } catch (err) {
+              console.warn('[MediaCollect] executeScript scroll error:', err);
+            }
           }
+
+          // 3. Fallback: If post was virtualized away by infinite scroll, navigate to its permalink
+          if (!scrolled) {
+            const cleanId = String(v.tweetId || '').replace(/^threads_/, '');
+            if (!isThreadsDomain && /^\d+$/.test(cleanId)) {
+              await chrome.tabs.update(tab.id, { url: `https://x.com/i/status/${cleanId}` });
+              scrolled = true;
+            } else if (isThreadsDomain && cleanId && !cleanId.startsWith('vid_')) {
+              await chrome.tabs.update(tab.id, { url: `https://www.threads.net/t/${cleanId}` });
+              scrolled = true;
+            }
+          }
+
+          // Close popup immediately so user focuses on the centered & highlighted post on the webpage
+          setTimeout(() => {
+            window.close();
+          }, 100);
         });
       }
 

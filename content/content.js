@@ -537,6 +537,9 @@
     if (!domData) return;
 
     const { tweetId, authorHandle, authorName, tweetText, poster } = domData;
+    if (tweetId) {
+      postElement.setAttribute('data-twitvid-post-id', tweetId);
+    }
 
     if (tweetId && videoCatalog.has(tweetId)) {
       const existing = videoCatalog.get(tweetId);
@@ -722,6 +725,7 @@
 
       const data = extractTweetDataFromDOM(post);
       if (!data || !data.tweetId) continue;
+      post.setAttribute('data-twitvid-post-id', data.tweetId);
 
       if (!seenIds.has(data.tweetId)) {
         seenIds.add(data.tweetId);
@@ -806,62 +810,99 @@
         return el.closest('div[data-pressable-container="true"]') ||
                el.closest('article') ||
                el.closest('div[role="article"]') ||
+               el.closest('[data-twitvid-post-id]') ||
                el;
       }
       return el.closest('article[data-testid="tweet"]') ||
              el.closest('article') ||
+             el.closest('div[data-testid="cellInnerDiv"]') ||
+             el.closest('[data-twitvid-post-id]') ||
              el;
     }
 
-    // 1. Match by Tweet ID / Post ID
+    // 1. Tagged post attribute (fastest & most accurate)
     if (tweetId) {
+      const cleanId = String(tweetId).replace(/^threads_/, '');
+      targetElement = document.querySelector(`[data-twitvid-post-id="${tweetId}"], [data-twitvid-post-id="${cleanId}"]`);
+    }
+
+    // 2. Match by Tweet ID / Post ID in links
+    if (!targetElement && tweetId && !String(tweetId).startsWith('vid_')) {
+      const cleanId = String(tweetId).replace(/^threads_/, '');
       if (!isThreads) {
-        const link = document.querySelector(`article a[href*="/status/${tweetId}"], a[href*="/status/${tweetId}"]`);
-        if (link) {
-          targetElement = resolvePostContainer(link);
-        } else {
-          targetElement = document.querySelector(`article[data-tweet-id="${tweetId}"]`);
-          if (!targetElement && window.location.pathname.includes(tweetId)) {
-            targetElement = document.querySelector('article[data-testid="tweet"]');
-          }
+        const links = document.querySelectorAll(`a[href*="/status/${cleanId}"], a[href*="${cleanId}"]`);
+        for (const l of links) {
+          const p = resolvePostContainer(l);
+          if (p) { targetElement = p; break; }
+        }
+        if (!targetElement) {
+          const dataEl = document.querySelector(`[data-tweet-id="${cleanId}"]`);
+          if (dataEl) targetElement = resolvePostContainer(dataEl);
+        }
+        if (!targetElement && window.location.pathname.includes(cleanId)) {
+          targetElement = document.querySelector('article[data-testid="tweet"]');
         }
       } else {
-        const cleanId = String(tweetId).replace(/^threads_/, '');
-        const link = document.querySelector(`a[href*="/post/${cleanId}"], a[href*="/t/${cleanId}"], a[href*="${cleanId}"]`);
-        if (link) {
-          targetElement = resolvePostContainer(link);
+        const links = document.querySelectorAll(`a[href*="/post/${cleanId}"], a[href*="/t/${cleanId}"], a[href*="${cleanId}"]`);
+        for (const l of links) {
+          const p = resolvePostContainer(l);
+          if (p) { targetElement = p; break; }
         }
       }
     }
 
-    // 2. Match by poster image / video thumbnail filename
+    // 3. Match by poster image / video thumbnail filename
     if (!targetElement && poster) {
-      const cleanPoster = poster.split('?')[0];
-      const filename = cleanPoster.split('/').pop();
-      if (filename && filename.length > 5) {
-        const mediaEl = document.querySelector(`img[src*="${filename}"], video[poster*="${filename}"]`);
-        if (mediaEl) {
-          targetElement = resolvePostContainer(mediaEl);
+      try {
+        const cleanPoster = poster.split('?')[0];
+        const filename = cleanPoster.split('/').pop();
+        if (filename && filename.length > 5) {
+          const mediaEl = document.querySelector(`img[src*="${filename}"], video[poster*="${filename}"]`);
+          if (mediaEl) {
+            targetElement = resolvePostContainer(mediaEl);
+          }
         }
-      }
+      } catch (_) {}
     }
 
-    // 3. Match by tweetText snippet
+    // 4. Significant words match in caption
     if (!targetElement && tweetText && tweetText.length > 6 && !tweetText.includes('Video from current')) {
-      const cleanSnippet = tweetText.trim().slice(0, 30);
+      const words = tweetText
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+        .split(/\s+/)
+        .map(w => w.trim())
+        .filter(w => w.length >= 4);
+
       const postSelector = isThreads
         ? 'div[data-pressable-container="true"], article, div[role="article"]'
-        : 'article[data-testid="tweet"]';
-      const posts = document.querySelectorAll(postSelector);
-      for (const p of posts) {
-        if (p.innerText && p.innerText.includes(cleanSnippet)) {
-          targetElement = p;
-          break;
+        : 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
+      const posts = Array.from(document.querySelectorAll(postSelector));
+
+      if (words.length >= 2) {
+        const topWords = words.slice(0, 4).map(w => w.toLowerCase());
+        for (const p of posts) {
+          const text = (p.innerText || '').toLowerCase();
+          const matchCount = topWords.filter(w => text.includes(w)).length;
+          if (matchCount >= Math.min(2, topWords.length)) {
+            targetElement = p;
+            break;
+          }
+        }
+      }
+
+      if (!targetElement) {
+        const cleanSnippet = tweetText.trim().slice(0, 25);
+        for (const p of posts) {
+          if ((p.innerText || '').includes(cleanSnippet)) {
+            targetElement = p;
+            break;
+          }
         }
       }
     }
 
-    // 4. Match by author handle
+    // 5. Match by author handle + video component
     if (!targetElement && authorHandle && !TwitVidUtils.isGenericAuthor(authorHandle)) {
       const cleanHandle = authorHandle.replace(/^@/, '').toLowerCase();
       const postSelector = isThreads
@@ -869,26 +910,75 @@
         : 'article[data-testid="tweet"]';
       const posts = document.querySelectorAll(postSelector);
       for (const p of posts) {
-        if (!postHasVideo(p)) continue;
         const link = p.querySelector(`a[href*="/${cleanHandle}"]`);
         if (link || (p.innerText && p.innerText.toLowerCase().includes(`@${cleanHandle}`))) {
-          targetElement = p;
-          break;
+          if (p.querySelector('video') || p.querySelector('img')) {
+            targetElement = p;
+            break;
+          }
         }
       }
     }
 
     if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 1. Scroll parent containers if inside scrollable view
+      try {
+        let parent = targetElement.parentElement;
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          const style = window.getComputedStyle(parent);
+          if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+            const parentRect = parent.getBoundingClientRect();
+            const elRect = targetElement.getBoundingClientRect();
+            const relativeTop = elRect.top - parentRect.top;
+            parent.scrollTo({
+              top: parent.scrollTop + relativeTop - (parent.clientHeight / 2) + (elRect.height / 2),
+              behavior: 'smooth'
+            });
+          }
+          parent = parent.parentElement;
+        }
+      } catch (_) {}
 
-      // Apply temporary visual highlight class
-      targetElement.classList.remove('twitvid-post-scrolled-highlight');
-      void targetElement.offsetWidth; // force reflow
-      targetElement.classList.add('twitvid-post-scrolled-highlight');
+      // 2. Scroll window to center target
+      try {
+        const rect = targetElement.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const targetY = scrollTop + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+        window.scrollTo({
+          top: Math.max(0, targetY),
+          behavior: 'smooth'
+        });
+      } catch (_) {}
 
-      setTimeout(() => {
+      // 3. Native scrollIntoView
+      try {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      } catch (_) {
+        try {
+          targetElement.scrollIntoView(true);
+        } catch (_) {}
+      }
+
+      // 4. Apply high-visibility highlight class and inline style fallback
+      try {
         targetElement.classList.remove('twitvid-post-scrolled-highlight');
-      }, 2400);
+        void targetElement.offsetWidth; // force reflow
+        targetElement.classList.add('twitvid-post-scrolled-highlight');
+
+        const prevOutline = targetElement.style.outline;
+        const prevShadow = targetElement.style.boxShadow;
+        const prevTransition = targetElement.style.transition;
+        targetElement.style.transition = 'outline 0.2s ease, box-shadow 0.2s ease';
+        targetElement.style.outline = '3px solid #1d9bf0';
+        targetElement.style.boxShadow = '0 0 24px 8px rgba(29, 155, 240, 0.55)';
+
+        setTimeout(() => {
+          targetElement.style.outline = prevOutline;
+          targetElement.style.boxShadow = prevShadow;
+          targetElement.style.transition = prevTransition;
+          targetElement.classList.remove('twitvid-post-scrolled-highlight');
+        }, 2500);
+      } catch (_) {}
 
       return true;
     }
