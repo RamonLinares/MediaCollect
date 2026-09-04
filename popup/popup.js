@@ -280,12 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       previewWrap.remove();
     });
 
-    const controls = card.querySelector('.card-controls');
-    if (controls) {
-      card.insertBefore(previewWrap, controls);
-    } else {
-      card.appendChild(previewWrap);
-    }
+    card.appendChild(previewWrap);
   }
 
   /**
@@ -411,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       card.innerHTML = `
-        <div class="card-top">
+        <div class="card-main">
           <div class="card-thumbnail-wrap" title="Click to Preview Video">
             ${thumbHtml}
             ${durationBadge}
@@ -420,23 +415,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>
           <div class="card-info">
-            <div class="card-author-title">${safeAuthorTitle}</div>
-            <div class="card-text">${safeTweetText}</div>
+            <div class="card-text-group">
+              <div class="card-author-title">${safeAuthorTitle}</div>
+              <div class="card-text">${safeTweetText}</div>
+            </div>
+            <div class="card-controls">
+              <div class="quality-select-wrap">
+                <select class="quality-select" aria-label="Select Video Quality">
+                  ${selectOptionsHtml}
+                </select>
+                <svg class="select-chevron" viewBox="0 0 24 24">
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </div>
+              <button type="button" class="btn-card-download" title="Download selected quality" ${variants.length === 0 ? 'disabled' : ''}>
+                ${SVG_DOWNLOAD_SM}
+                <span>Download</span>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="card-controls">
-          <div class="quality-select-wrap">
-            <select class="quality-select" aria-label="Select Video Quality">
-              ${selectOptionsHtml}
-            </select>
-            <svg class="select-chevron" viewBox="0 0 24 24">
-              <path d="M7 10l5 5 5-5z"/>
-            </svg>
-          </div>
-          <button type="button" class="btn-card-download" title="Download selected quality" ${variants.length === 0 ? 'disabled' : ''}>
-            ${SVG_DOWNLOAD_SM}
-            <span>Download</span>
-          </button>
         </div>
       `;
 
