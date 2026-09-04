@@ -17,6 +17,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const videoCountBadge = document.getElementById('video-count-badge');
   const filterChips = document.querySelectorAll('.filter-chip');
 
+  // Search input elements
+  const searchInput = document.getElementById('video-search-input');
+  const btnSearchClear = document.getElementById('btn-search-clear');
+  const searchEmptyState = document.getElementById('search-empty-state');
+  const searchEmptyText = document.getElementById('search-empty-text');
+  const btnSearchReset = document.getElementById('btn-search-reset');
+
   // Mode Tabs
   const modeTabs = document.querySelectorAll('.mode-tab');
   const tabVideos = document.getElementById('tab-videos');
@@ -30,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentVideos = [];
   let activeFilter = 'all';
+  let searchQuery = '';
 
   // SVG Icons
   const SVG_DOWNLOAD_SM = `
@@ -287,6 +295,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentVideos = videos || [];
     videoList.innerHTML = '';
 
+    if (!currentVideos || currentVideos.length === 0) {
+      emptyState.style.display = 'block';
+      if (searchEmptyState) searchEmptyState.style.display = 'none';
+      videoCountBadge.textContent = '0';
+      return;
+    }
+
     // Apply active filter
     let filtered = currentVideos;
     if (activeFilter === 'hd') {
@@ -298,13 +313,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       filtered = currentVideos.filter(v => (v.durationMs && v.durationMs <= 60000));
     }
 
+    // Apply search query filter
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(v => {
+        const name = (v.authorName || '').toLowerCase();
+        const handle = (v.authorHandle || '').toLowerCase();
+        const text = (v.tweetText || '').toLowerCase();
+        const id = String(v.tweetId || '').toLowerCase();
+        return name.includes(query) || handle.includes(query) || text.includes(query) || id.includes(query);
+      });
+    }
+
     if (!filtered || filtered.length === 0) {
-      emptyState.style.display = 'block';
+      if (query) {
+        emptyState.style.display = 'none';
+        if (searchEmptyState) searchEmptyState.style.display = 'block';
+        if (searchEmptyText) {
+          searchEmptyText.textContent = `No videos match "${searchQuery.trim()}".`;
+        }
+      } else {
+        emptyState.style.display = 'block';
+        if (searchEmptyState) searchEmptyState.style.display = 'none';
+      }
       videoCountBadge.textContent = '0';
       return;
     }
 
     emptyState.style.display = 'none';
+    if (searchEmptyState) searchEmptyState.style.display = 'none';
     videoCountBadge.textContent = String(filtered.length);
 
     for (const v of filtered) {
@@ -556,6 +593,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function clearList() {
     if (!tab?.id) return;
 
+    if (searchInput) searchInput.value = '';
+    searchQuery = '';
+    if (btnSearchClear) btnSearchClear.style.display = 'none';
+    if (searchEmptyState) searchEmptyState.style.display = 'none';
+
     renderVideos([]);
 
     try {
@@ -570,6 +612,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Clear button click
   if (btnClear) btnClear.addEventListener('click', clearList);
+
+  // Search input event handlers
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value;
+      if (btnSearchClear) {
+        btnSearchClear.style.display = searchQuery ? 'flex' : 'none';
+      }
+      renderVideos(currentVideos);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        searchQuery = '';
+        if (btnSearchClear) btnSearchClear.style.display = 'none';
+        renderVideos(currentVideos);
+      }
+    });
+  }
+
+  if (btnSearchClear) {
+    btnSearchClear.addEventListener('click', () => {
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
+      searchQuery = '';
+      btnSearchClear.style.display = 'none';
+      renderVideos(currentVideos);
+    });
+  }
+
+  if (btnSearchReset) {
+    btnSearchReset.addEventListener('click', () => {
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
+      searchQuery = '';
+      if (btnSearchClear) btnSearchClear.style.display = 'none';
+      renderVideos(currentVideos);
+    });
+  }
 
   // Scan feed / refresh buttons
   if (btnRefresh) {

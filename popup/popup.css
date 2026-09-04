@@ -355,6 +355,96 @@ body {
 }
 
 /* ==========================================================================
+   Quick Text Search Row - Neumorphic Recessed Input
+   ========================================================================== */
+.video-search-row {
+  margin-bottom: 11px;
+}
+
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  height: 37px;
+  padding: 0 34px 0 34px;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--nm-pressed-sm);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.search-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: var(--nm-pressed-sm), 0 0 0 2px var(--accent-blue-subtle);
+}
+
+.search-icon {
+  position: absolute;
+  left: 11px;
+  width: 15px;
+  height: 15px;
+  fill: var(--text-muted);
+  pointer-events: none;
+  transition: fill 0.2s ease;
+}
+
+.search-input-wrap:focus-within .search-icon {
+  fill: var(--accent-blue);
+}
+
+.btn-search-clear {
+  position: absolute;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  box-shadow: var(--nm-raised-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-muted);
+  transition: all 0.18s ease;
+  outline: none;
+}
+
+.btn-search-clear:hover {
+  color: var(--accent-red);
+  box-shadow: var(--nm-raised-hover);
+  transform: scale(1.08);
+}
+
+.btn-search-clear:active {
+  box-shadow: var(--nm-pressed-sm);
+  transform: scale(0.95);
+}
+
+.btn-search-clear svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
+}
+
+/* ==========================================================================
    Filter Chips Row - Neumorphic Badges
    ========================================================================== */
 .filter-chips-row {
