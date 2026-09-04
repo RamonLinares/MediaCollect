@@ -147,22 +147,36 @@ function parseVideoVariants(variants) {
 }
 
 /**
- * Normalizes author name and handle
+ * Checks if a given author name or handle is a generic placeholder
+ */
+function isGenericAuthor(str) {
+  if (!str || typeof str !== 'string') return true;
+  const s = str.trim().toLowerCase();
+  return !s ||
+    s === 'post' ||
+    s === 'x post' ||
+    s === 'threads post' ||
+    s === 'user' ||
+    s === 'x user' ||
+    s === 'threads user' ||
+    s === 'x_user' ||
+    s === '@x_user' ||
+    s === 'threads_user' ||
+    s === 'unknown';
+}
+
+/**
+ * Normalizes author name and handle, discarding generic placeholders
  */
 function normalizeAuthorInfo(name, handle) {
-  let cleanHandle = handle || '';
-  if (cleanHandle === 'x_user' || cleanHandle === '@x_user' || cleanHandle === 'threads_user') cleanHandle = '';
+  let cleanHandle = (handle || '').trim().replace(/^@/, '');
+  if (isGenericAuthor(cleanHandle)) cleanHandle = '';
 
-  let cleanName = name || '';
-  if (cleanName === 'X User' || cleanName === 'X Post' || cleanName === 'User' || cleanName === 'Threads User' || cleanName === 'Threads Post') {
-    cleanName = '';
-  }
+  let cleanName = (name || '').trim();
+  if (isGenericAuthor(cleanName)) cleanName = '';
 
   if (!cleanName && cleanHandle) {
     cleanName = cleanHandle;
-  }
-  if (!cleanName) {
-    cleanName = 'Post';
   }
 
   return {
@@ -236,13 +250,13 @@ function mergeAndDeduplicateVideos(listA = [], listB = []) {
       const old = results[existingIndex];
       const oldAuth = normalizeAuthorInfo(old.authorName, old.authorHandle);
 
-      const finalAuthorName = (oldAuth.authorName !== 'Post' && oldAuth.authorName !== 'X Post' && oldAuth.authorName !== 'Threads Post')
-        ? oldAuth.authorName
-        : (itemAuth.authorName !== 'Post' ? itemAuth.authorName : oldAuth.authorName);
+      const finalAuthorName = !isGenericAuthor(itemAuth.authorName)
+        ? itemAuth.authorName
+        : (!isGenericAuthor(oldAuth.authorName) ? oldAuth.authorName : (itemAuth.authorHandle || oldAuth.authorHandle || ''));
 
-      const finalAuthorHandle = (oldAuth.authorHandle && oldAuth.authorHandle !== 'user')
-        ? oldAuth.authorHandle
-        : (itemAuth.authorHandle || oldAuth.authorHandle);
+      const finalAuthorHandle = !isGenericAuthor(itemAuth.authorHandle) && itemAuth.authorHandle
+        ? itemAuth.authorHandle
+        : (!isGenericAuthor(oldAuth.authorHandle) && oldAuth.authorHandle ? oldAuth.authorHandle : '');
 
       const isGenericText = (t) => !t || t.includes('timeline / post') || t.includes('Video from') || t.trim() === '';
       const mergedTweetText = !isGenericText(item.tweetText)
@@ -332,6 +346,7 @@ const utilsExport = {
   createVideoFilename,
   formatDuration,
   mergeAndDeduplicateVideos,
+  isGenericAuthor,
   escapeHtml,
   sanitizeUrl
 };

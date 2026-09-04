@@ -115,14 +115,22 @@
    * Finds user details in any user object or tweet/threads object
    */
   function extractUserInfo(obj) {
+    if (!obj || typeof obj !== 'object') return { name: '', screen_name: '' };
     let name = '';
     let screen_name = '';
 
     const candidates = [
       obj.core?.user_results?.result?.legacy,
+      obj.core?.user_results?.result?.core,
       obj.core?.user_results?.result,
       obj.user_results?.result?.legacy,
+      obj.user_results?.result?.core,
       obj.user_results?.result,
+      obj.tweet?.core?.user_results?.result?.legacy,
+      obj.tweet?.core?.user_results?.result?.core,
+      obj.tweet?.core?.user_results?.result,
+      obj.retweeted_status_result?.result?.tweet?.core?.user_results?.result?.legacy,
+      obj.quoted_status_result?.result?.tweet?.core?.user_results?.result?.legacy,
       obj.user?.legacy,
       obj.user,
       obj.author?.legacy,
@@ -136,6 +144,9 @@
         if (name && screen_name) break;
       }
     }
+
+    if (!screen_name && (obj.screen_name || obj.username)) screen_name = obj.screen_name || obj.username;
+    if (!name && (obj.name || obj.full_name)) name = obj.name || obj.full_name;
 
     return { name, screen_name };
   }
@@ -158,7 +169,12 @@
     const tweetId = tweet.rest_id || tweet.id_str || tweet.id;
     const legacy = tweet.legacy || tweet;
 
-    const { name: authorName, screen_name: authorHandle } = extractUserInfo(tweet);
+    let { name: authorName, screen_name: authorHandle } = extractUserInfo(tweet);
+    if (!authorHandle) {
+      const parentUser = extractUserInfo(tweetObj);
+      if (parentUser.screen_name) authorHandle = parentUser.screen_name;
+      if (!authorName && parentUser.name) authorName = parentUser.name;
+    }
 
     const tweetText = tweet.note_tweet?.note_tweet_results?.result?.text ||
                       legacy.full_text ||
@@ -177,6 +193,17 @@
       if (media.video_info && Array.isArray(media.video_info.variants)) {
         const variants = extractMp4Variants(media.video_info.variants);
         if (variants.length > 0) {
+          let mediaAuthorHandle = authorHandle;
+          let mediaAuthorName = authorName;
+
+          if (!mediaAuthorHandle && media.expanded_url) {
+            const urlMatch = media.expanded_url.match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/i);
+            if (urlMatch && !['i', 'home', 'explore', 'notifications'].includes(urlMatch[1])) {
+              mediaAuthorHandle = urlMatch[1];
+              if (!mediaAuthorName) mediaAuthorName = urlMatch[1];
+            }
+          }
+
           const finalTweetId = tweetId || (media.expanded_url?.match(/status\/(\d+)/)?.[1]) || media.id_str;
           const poster = media.media_url_https || media.media_url || '';
           const durationMs = media.video_info.duration_millis || 0;
@@ -184,8 +211,8 @@
           const record = {
             tweetId: finalTweetId,
             mediaId: media.id_str,
-            authorName: authorName || (authorHandle ? authorHandle : 'X Post'),
-            authorHandle: authorHandle || '',
+            authorName: mediaAuthorName || mediaAuthorHandle || '',
+            authorHandle: mediaAuthorHandle || '',
             tweetText,
             poster,
             durationMs,
@@ -277,12 +304,23 @@
     } else if (obj.video_info && Array.isArray(obj.video_info.variants)) {
       const variants = extractMp4Variants(obj.video_info.variants);
       if (variants.length > 0) {
-        const tweetId = obj.id_str || obj.source_status_id_str || (obj.expanded_url?.match(/status\/(\d+)/)?.[1]);
+        let extractedHandle = '';
+        let extractedName = '';
+        const urlToCheck = obj.expanded_url || obj.url || '';
+        if (urlToCheck) {
+          const match = urlToCheck.match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/i);
+          if (match && !['i', 'home', 'explore', 'notifications'].includes(match[1])) {
+            extractedHandle = match[1];
+            extractedName = match[1];
+          }
+        }
+
+        const tweetId = obj.id_str || obj.source_status_id_str || (urlToCheck.match(/status\/(\d+)/)?.[1]);
         const record = {
           tweetId: tweetId || `vid_${Date.now()}`,
           mediaId: obj.id_str,
-          authorName: 'X Post',
-          authorHandle: '',
+          authorName: extractedName || extractedHandle || '',
+          authorHandle: extractedHandle || '',
           tweetText: '',
           poster: obj.media_url_https || obj.media_url || '',
           durationMs: obj.video_info.duration_millis || 0,

@@ -300,7 +300,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       const durationBadge = durationText ? `<span class="card-duration">${durationText}</span>` : '';
 
       const authorInfo = TwitVidUtils.normalizeAuthorInfo(v.authorName, v.authorHandle);
-      const authorTitle = authorInfo.authorHandle ? `@${authorInfo.authorHandle}` : authorInfo.authorName;
+      let authorTitle = '';
+      if (authorInfo.authorName && authorInfo.authorHandle && authorInfo.authorName.toLowerCase() !== authorInfo.authorHandle.toLowerCase()) {
+        authorTitle = `${authorInfo.authorName} (@${authorInfo.authorHandle})`;
+      } else if (authorInfo.authorHandle) {
+        authorTitle = `@${authorInfo.authorHandle}`;
+      } else if (authorInfo.authorName) {
+        authorTitle = authorInfo.authorName.startsWith('@') ? authorInfo.authorName : `@${authorInfo.authorName}`;
+      } else {
+        const textMatch = (v.tweetText || '').match(/^@([A-Za-z0-9_]{1,25})/);
+        if (textMatch) {
+          authorTitle = `@${textMatch[1]}`;
+        } else {
+          authorTitle = v.platform ? `${v.platform} Video` : 'Social Video';
+        }
+      }
       const tweetText = v.tweetText || 'Video from current feed / post.';
 
       const variants = TwitVidUtils.parseVideoVariants(v.variants || []);

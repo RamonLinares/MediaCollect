@@ -225,33 +225,32 @@
     let poster = '';
     let directVideoSrc = '';
 
-    // 1. Status links -> extract screen_name and tweet ID
-    const statusLinks = tweetElement.querySelectorAll('a[href*="/status/"]');
-    for (const a of statusLinks) {
-      const href = a.getAttribute('href') || '';
-      const match = href.match(/\/([^/?#]+)\/status\/(\d+)/);
-      if (match) {
-        const potentialHandle = match[1];
-        if (!['i', 'home', 'explore', 'notifications', 'messages'].includes(potentialHandle)) {
-          authorHandle = potentialHandle;
-        }
-        tweetId = match[2];
-        break;
+    // 1. Tweet User Avatar (always present on X tweets and has the true handle and display name)
+    const avatarEl = tweetElement.querySelector('div[data-testid="Tweet-User-Avatar"] a, a[data-testid="Tweet-User-Avatar"]');
+    if (avatarEl) {
+      const href = avatarEl.getAttribute('href') || '';
+      const clean = href.replace(/^\//, '').split('/')[0].split('?')[0];
+      if (clean && !['home', 'explore', 'notifications', 'messages', 'i'].includes(clean)) {
+        authorHandle = clean;
       }
-      const numMatch = href.match(/\/status\/(\d+)/);
-      if (numMatch && !tweetId) {
-        tweetId = numMatch[1];
+      const img = avatarEl.querySelector('img');
+      if (img && img.getAttribute('alt')) {
+        const alt = img.getAttribute('alt').trim();
+        if (alt && !TwitVidUtils.isGenericAuthor(alt)) {
+          authorName = alt;
+        }
       }
     }
 
     // 2. User Name header container
     const userNameEl = tweetElement.querySelector('div[data-testid="User-Name"]');
     if (userNameEl) {
-      const links = userNameEl.querySelectorAll('a[role="link"]');
-      if (links.length > 0) {
-        const nameText = links[0].innerText.trim();
-        if (nameText && !nameText.startsWith('@')) {
-          authorName = nameText;
+      const links = userNameEl.querySelectorAll('a[role="link"], a[href^="/"]');
+      for (const link of links) {
+        const href = link.getAttribute('href') || '';
+        const clean = href.replace(/^\//, '').split('/')[0].split('?')[0];
+        if (clean && !['home', 'explore', 'notifications', 'messages', 'i'].includes(clean)) {
+          if (!authorHandle) authorHandle = clean;
         }
       }
 
@@ -259,21 +258,51 @@
       for (const span of spans) {
         const text = span.textContent.trim();
         if (text.startsWith('@') && text.length > 1) {
-          authorHandle = text.slice(1);
-          break;
+          if (!authorHandle) authorHandle = text.slice(1);
+        } else if (text && !authorName && !text.startsWith('@') && text !== '·' && text !== '•') {
+          if (!/^\d+[smhdwy]$/i.test(text) && !/^(\w{3}\s+\d+|\d+\s+\w{3})$/i.test(text) && !TwitVidUtils.isGenericAuthor(text)) {
+            authorName = text;
+          }
         }
       }
     }
 
-    // 3. Fallback handle from any user link in tweet
+    // 3. Status links -> extract screen_name and tweet ID
+    const statusLinks = tweetElement.querySelectorAll('a[href*="/status/"]');
+    for (const a of statusLinks) {
+      const href = a.getAttribute('href') || '';
+      const match = href.match(/(?:twitter\.com|x\.com)?\/([^/?#]+)\/status\/(\d+)/i);
+      if (match) {
+        const potentialHandle = match[1];
+        if (!['i', 'home', 'explore', 'notifications', 'messages'].includes(potentialHandle)) {
+          if (!authorHandle) authorHandle = potentialHandle;
+        }
+        if (!tweetId) tweetId = match[2];
+        if (authorHandle && tweetId) break;
+      }
+      const numMatch = href.match(/\/status\/(\d+)/);
+      if (numMatch && !tweetId) {
+        tweetId = numMatch[1];
+      }
+    }
+
+    // 4. Fallback handle from any user link in tweet
     if (!authorHandle) {
-      const userLink = tweetElement.querySelector('a[href^="/"][role="link"]');
+      const userLink = tweetElement.querySelector('a[href^="/"][role="link"], a[href^="/"]');
       if (userLink) {
         const href = userLink.getAttribute('href') || '';
-        const clean = href.replace('/', '').split('/')[0].split('?')[0];
+        const clean = href.replace(/^\//, '').split('/')[0].split('?')[0];
         if (clean && !['home', 'explore', 'notifications', 'messages', 'i'].includes(clean)) {
           authorHandle = clean;
         }
+      }
+    }
+
+    // 5. Fallback from current page URL if on a status permalink page
+    if (!authorHandle && window.location.pathname) {
+      const pageMatch = window.location.pathname.match(/\/([^/?#]+)\/status\/\d+/i);
+      if (pageMatch && !['i', 'home', 'explore'].includes(pageMatch[1])) {
+        authorHandle = pageMatch[1];
       }
     }
 
@@ -472,8 +501,8 @@
 
     if (tweetId && videoCatalog.has(tweetId)) {
       const existing = videoCatalog.get(tweetId);
-      if (authorName && authorName !== 'Post' && authorName !== 'X Post') existing.authorName = authorName;
-      if (authorHandle) existing.authorHandle = authorHandle;
+      if (authorName && !TwitVidUtils.isGenericAuthor(authorName)) existing.authorName = authorName;
+      if (authorHandle && !TwitVidUtils.isGenericAuthor(authorHandle)) existing.authorHandle = authorHandle;
       if (tweetText && !existing.tweetText) existing.tweetText = tweetText;
       if (poster && !existing.poster) existing.poster = poster;
     }
@@ -670,8 +699,12 @@
         } else {
           visibleVideos.push({
             ...cached,
-            authorName: (data.authorName && data.authorName !== 'Post' && data.authorName !== 'X Post') ? data.authorName : cached.authorName,
-            authorHandle: data.authorHandle || cached.authorHandle,
+            authorName: (data.authorName && !TwitVidUtils.isGenericAuthor(data.authorName))
+              ? data.authorName
+              : (!TwitVidUtils.isGenericAuthor(cached.authorName) ? cached.authorName : (data.authorHandle || cached.authorHandle || '')),
+            authorHandle: (!TwitVidUtils.isGenericAuthor(data.authorHandle) && data.authorHandle)
+              ? data.authorHandle
+              : (!TwitVidUtils.isGenericAuthor(cached.authorHandle) ? cached.authorHandle : ''),
             tweetText: data.tweetText || cached.tweetText,
             poster: data.poster || cached.poster,
             platform: data.platform || platformName

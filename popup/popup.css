@@ -8,12 +8,12 @@
   --bg-tile: #eae8e3;
 
   /* Neumorphic Shadow Calculations (Dual Light & Dark) */
-  --shadow-light: #ffffff;
-  --shadow-dark: rgba(175, 169, 157, 0.55);
-  --shadow-dark-strong: rgba(158, 152, 140, 0.7);
+  --shadow-light: rgba(255, 255, 255, 0.85);
+  --shadow-dark: rgba(175, 169, 157, 0.45);
+  --shadow-dark-strong: rgba(158, 152, 140, 0.62);
 
   /* Tactile Neumorphic Presets */
-  --nm-raised-lg: 7px 7px 16px var(--shadow-dark), -7px -7px 16px var(--shadow-light);
+  --nm-raised-lg: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
   --nm-raised: 5px 5px 12px var(--shadow-dark), -5px -5px 12px var(--shadow-light);
   --nm-raised-sm: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
   --nm-raised-hover: 5px 5px 14px var(--shadow-dark), -5px -5px 14px var(--shadow-light);
@@ -38,7 +38,7 @@
   --accent-red: #e11d48;
 
   /* Subtle Crisp Border Highlights */
-  --border-light: rgba(255, 255, 255, 0.85);
+  --border-light: rgba(255, 255, 255, 0.4);
   --border-subtle: rgba(182, 176, 164, 0.25);
   --border-active: rgba(29, 155, 240, 0.45);
 
@@ -537,9 +537,8 @@ body {
   gap: 14px;
   max-height: 440px;
   overflow-y: auto;
-  padding-right: 4px;
-  padding-left: 2px;
-  padding-bottom: 4px;
+  overflow-x: hidden;
+  padding: 8px 10px 12px 10px;
 }
 
 /* Neumorphic Scrollbar */
@@ -578,7 +577,7 @@ body {
 
 .video-card:hover {
   box-shadow: var(--nm-raised-lg);
-  border-color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.65);
 }
 
 .card-top {
