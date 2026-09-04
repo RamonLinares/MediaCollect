@@ -236,18 +236,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   /**
    * Toggles inline video preview player in a card
    */
-  function toggleVideoPreview(card, videoUrl, previewBtn) {
+  function toggleVideoPreview(card, videoUrl) {
     document.querySelectorAll('.video-preview-wrap').forEach(el => {
       const vid = el.querySelector('video');
       if (vid) vid.pause();
-      const parentCard = el.closest('.video-card');
-      if (parentCard && parentCard !== card) {
-        const otherBtn = parentCard.querySelector('.btn-card-preview');
-        if (otherBtn) {
-          otherBtn.classList.remove('is-active');
-          otherBtn.innerHTML = `${SVG_PLAY_SM}<span>Preview</span>`;
-        }
-      }
       if (el.parentElement !== card) el.remove();
     });
 
@@ -256,10 +248,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vid = existingPreview.querySelector('video');
       if (vid) vid.pause();
       existingPreview.remove();
-      if (previewBtn) {
-        previewBtn.classList.remove('is-active');
-        previewBtn.innerHTML = `${SVG_PLAY_SM}<span>Preview</span>`;
-      }
       return;
     }
 
@@ -282,10 +270,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vid = previewWrap.querySelector('video');
       if (vid) vid.pause();
       previewWrap.remove();
-      if (previewBtn) {
-        previewBtn.classList.remove('is-active');
-        previewBtn.innerHTML = `${SVG_PLAY_SM}<span>Preview</span>`;
-      }
     });
 
     const controls = card.querySelector('.card-controls');
@@ -293,11 +277,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       card.insertBefore(previewWrap, controls);
     } else {
       card.appendChild(previewWrap);
-    }
-
-    if (previewBtn) {
-      previewBtn.classList.add('is-active');
-      previewBtn.innerHTML = `${SVG_CLOSE_SM}<span>Close</span>`;
     }
   }
 
@@ -409,10 +388,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         </div>
         <div class="card-controls">
-          <button type="button" class="btn-card-preview" title="Preview video">
-            ${SVG_PLAY_SM}
-            <span>Preview</span>
-          </button>
           <div class="quality-select-wrap">
             <select class="quality-select" aria-label="Select Video Quality">
               ${selectOptionsHtml}
@@ -442,23 +417,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
-      // Preview toggle button & thumbnail click
-      const previewBtn = card.querySelector('.btn-card-preview');
+      // Preview toggle on thumbnail click
       const thumbWrap = card.querySelector('.card-thumbnail-wrap');
-
-      function handlePreviewToggle(e) {
-        e.stopPropagation();
-        if (previewUrl) {
-          toggleVideoPreview(card, previewUrl, previewBtn);
-        }
-      }
-
       if (previewUrl) {
-        previewBtn.addEventListener('click', handlePreviewToggle);
-        thumbWrap.addEventListener('click', handlePreviewToggle);
-      } else {
-        previewBtn.disabled = true;
-        previewBtn.style.opacity = '0.5';
+        thumbWrap.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleVideoPreview(card, previewUrl);
+        });
       }
 
       // Download button click with selected quality

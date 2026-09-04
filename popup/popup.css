@@ -693,51 +693,13 @@ body {
 }
 
 /* ==========================================================================
-   Card Controls Bar - Preview, Quality Select, Download
+   Card Controls Bar - Quality Select & Download
    ========================================================================== */
 .card-controls {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   padding-top: 4px;
-}
-
-.btn-card-preview {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--nm-raised-sm);
-  border-radius: var(--radius-md);
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  outline: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.btn-card-preview:hover:not(:disabled) {
-  color: var(--accent-blue-dark);
-  box-shadow: var(--nm-raised-hover);
-  transform: translateY(-1px);
-}
-
-.btn-card-preview:active:not(:disabled),
-.btn-card-preview.is-active {
-  box-shadow: var(--nm-pressed-sm);
-  color: var(--accent-blue);
-  transform: translateY(0);
-}
-
-.btn-card-preview:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Neumorphic Quality Dropdown Select */
@@ -751,12 +713,12 @@ body {
 
 .quality-select {
   width: 100%;
-  height: 35px;
-  padding: 0 22px 0 9px;
+  height: 36px;
+  padding: 0 28px 0 12px;
   background-color: var(--bg-primary);
   color: var(--text-main);
   font-family: var(--font-family);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
@@ -794,7 +756,7 @@ body {
 
 .select-chevron {
   position: absolute;
-  right: 8px;
+  right: 10px;
   width: 14px;
   height: 14px;
   fill: var(--text-muted);
@@ -808,13 +770,14 @@ body {
 
 /* Primary Download Button */
 .btn-card-download {
+  height: 36px;
   background: linear-gradient(135deg, #25a4f4 0%, #1181cc 100%);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 3px 3px 8px rgba(17, 129, 204, 0.38), -2px -2px 6px var(--shadow-light);
   border-radius: var(--radius-md);
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 0 16px;
+  font-size: 12.5px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
