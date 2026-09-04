@@ -764,7 +764,32 @@ body {
   flex-direction: column;
   gap: 3px;
   min-width: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 5px;
+  margin: -2px -5px;
+  transition: background-color 0.18s ease, transform 0.12s ease;
+  user-select: none;
 }
+
+.card-text-group:hover {
+  background-color: rgba(29, 155, 240, 0.08);
+}
+
+.card-text-group:hover .card-author-title {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
+.card-text-group:active {
+  background-color: rgba(29, 155, 240, 0.15);
+  transform: scale(0.985);
+}
+
+.card-text-group.jump-active {
+  background-color: rgba(29, 155, 240, 0.22);
+}
+
 
 .card-author-title {
   font-weight: 700;

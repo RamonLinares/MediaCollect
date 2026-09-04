@@ -185,3 +185,36 @@
   fill: #059669;
   flex-shrink: 0;
 }
+
+/* ==========================================================================
+   Post Scroll & Highlight Pulse (triggered from extension popup)
+   ========================================================================== */
+@keyframes twitvid-post-highlight {
+  0% {
+    outline: 3px solid #1d9bf0;
+    box-shadow: 0 0 0 0 rgba(29, 155, 240, 0.6);
+    background-color: rgba(29, 155, 240, 0.08);
+  }
+  35% {
+    outline: 3px solid #1d9bf0;
+    box-shadow: 0 0 22px 6px rgba(29, 155, 240, 0.45);
+    background-color: rgba(29, 155, 240, 0.06);
+  }
+  70% {
+    outline: 2px solid #1d9bf0;
+    box-shadow: 0 0 12px 3px rgba(29, 155, 240, 0.25);
+    background-color: rgba(29, 155, 240, 0.03);
+  }
+  100% {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 0 rgba(29, 155, 240, 0);
+    background-color: transparent;
+  }
+}
+
+.twitvid-post-scrolled-highlight {
+  animation: twitvid-post-highlight 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  border-radius: 12px !important;
+  transition: outline 0.2s ease, box-shadow 0.2s ease !important;
+}
+

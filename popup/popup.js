@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>
           <div class="card-info">
-            <div class="card-text-group">
+            <div class="card-text-group" title="Click to view post on page">
               <div class="card-author-title">${safeAuthorTitle}</div>
               <div class="card-text">${safeTweetText}</div>
             </div>
@@ -482,9 +482,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
+      // Isolate quality select from triggering card click
+      const selectEl = card.querySelector('.quality-select');
+      if (selectEl) {
+        selectEl.addEventListener('click', (e) => e.stopPropagation());
+        selectEl.addEventListener('change', (e) => e.stopPropagation());
+      }
+
+      // Click on text group to scroll the webpage to that post
+      const textGroup = card.querySelector('.card-text-group');
+      if (textGroup) {
+        textGroup.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!tab?.id) return;
+
+          textGroup.classList.add('jump-active');
+          setTimeout(() => textGroup.classList.remove('jump-active'), 500);
+
+          try {
+            await chrome.tabs.sendMessage(tab.id, {
+              type: 'SCROLL_TO_POST',
+              payload: {
+                tweetId: v.tweetId,
+                authorHandle: v.authorHandle,
+                authorName: v.authorName,
+                tweetText: v.tweetText,
+                poster: v.poster
+              }
+            });
+          } catch (err) {
+            console.warn('[MediaCollect] Scroll to post message error:', err);
+          }
+        });
+      }
+
       // Download button click with selected quality
       const downloadBtn = card.querySelector('.btn-card-download');
-      const selectEl = card.querySelector('.quality-select');
 
       downloadBtn.addEventListener('click', (e) => {
         e.stopPropagation();

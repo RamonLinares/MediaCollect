@@ -791,6 +791,111 @@
     return TwitVidUtils.mergeAndDeduplicateVideos(visibleVideos, allCatalog);
   }
 
+  /**
+   * Locates a post element in the DOM and smoothly scrolls to it with a highlight effect
+   */
+  function scrollToPost(payload) {
+    if (!payload) return false;
+
+    const { tweetId, authorHandle, authorName, tweetText, poster } = payload;
+    let targetElement = null;
+
+    function resolvePostContainer(el) {
+      if (!el) return null;
+      if (isThreads) {
+        return el.closest('div[data-pressable-container="true"]') ||
+               el.closest('article') ||
+               el.closest('div[role="article"]') ||
+               el;
+      }
+      return el.closest('article[data-testid="tweet"]') ||
+             el.closest('article') ||
+             el;
+    }
+
+    // 1. Match by Tweet ID / Post ID
+    if (tweetId) {
+      if (!isThreads) {
+        const link = document.querySelector(`article a[href*="/status/${tweetId}"], a[href*="/status/${tweetId}"]`);
+        if (link) {
+          targetElement = resolvePostContainer(link);
+        } else {
+          targetElement = document.querySelector(`article[data-tweet-id="${tweetId}"]`);
+          if (!targetElement && window.location.pathname.includes(tweetId)) {
+            targetElement = document.querySelector('article[data-testid="tweet"]');
+          }
+        }
+      } else {
+        const cleanId = String(tweetId).replace(/^threads_/, '');
+        const link = document.querySelector(`a[href*="/post/${cleanId}"], a[href*="/t/${cleanId}"], a[href*="${cleanId}"]`);
+        if (link) {
+          targetElement = resolvePostContainer(link);
+        }
+      }
+    }
+
+    // 2. Match by poster image / video thumbnail filename
+    if (!targetElement && poster) {
+      const cleanPoster = poster.split('?')[0];
+      const filename = cleanPoster.split('/').pop();
+      if (filename && filename.length > 5) {
+        const mediaEl = document.querySelector(`img[src*="${filename}"], video[poster*="${filename}"]`);
+        if (mediaEl) {
+          targetElement = resolvePostContainer(mediaEl);
+        }
+      }
+    }
+
+    // 3. Match by tweetText snippet
+    if (!targetElement && tweetText && tweetText.length > 6 && !tweetText.includes('Video from current')) {
+      const cleanSnippet = tweetText.trim().slice(0, 30);
+      const postSelector = isThreads
+        ? 'div[data-pressable-container="true"], article, div[role="article"]'
+        : 'article[data-testid="tweet"]';
+      const posts = document.querySelectorAll(postSelector);
+      for (const p of posts) {
+        if (p.innerText && p.innerText.includes(cleanSnippet)) {
+          targetElement = p;
+          break;
+        }
+      }
+    }
+
+    // 4. Match by author handle
+    if (!targetElement && authorHandle && !TwitVidUtils.isGenericAuthor(authorHandle)) {
+      const cleanHandle = authorHandle.replace(/^@/, '').toLowerCase();
+      const postSelector = isThreads
+        ? 'div[data-pressable-container="true"], article, div[role="article"]'
+        : 'article[data-testid="tweet"]';
+      const posts = document.querySelectorAll(postSelector);
+      for (const p of posts) {
+        if (!postHasVideo(p)) continue;
+        const link = p.querySelector(`a[href*="/${cleanHandle}"]`);
+        if (link || (p.innerText && p.innerText.toLowerCase().includes(`@${cleanHandle}`))) {
+          targetElement = p;
+          break;
+        }
+      }
+    }
+
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Apply temporary visual highlight class
+      targetElement.classList.remove('twitvid-post-scrolled-highlight');
+      void targetElement.offsetWidth; // force reflow
+      targetElement.classList.add('twitvid-post-scrolled-highlight');
+
+      setTimeout(() => {
+        targetElement.classList.remove('twitvid-post-scrolled-highlight');
+      }, 2400);
+
+      return true;
+    }
+
+    return false;
+  }
+
   // Message listener from popup
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'GET_CURRENT_PAGE_VIDEOS') {
@@ -804,6 +909,12 @@
     if (message.type === 'CLEAR_PAGE_VIDEOS') {
       videoCatalog.clear();
       sendResponse({ success: true, videos: [] });
+      return true;
+    }
+
+    if (message.type === 'SCROLL_TO_POST') {
+      const found = scrollToPost(message.payload);
+      sendResponse({ success: found, notFound: !found });
       return true;
     }
 
