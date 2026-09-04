@@ -248,7 +248,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.video-preview-wrap').forEach(el => {
       const vid = el.querySelector('video');
       if (vid) vid.pause();
-      if (el.parentElement !== card) el.remove();
+      if (el.parentElement !== card) {
+        el.parentElement?.classList.remove('is-previewing');
+        el.remove();
+      }
     });
 
     const existingPreview = card.querySelector('.video-preview-wrap');
@@ -256,6 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vid = existingPreview.querySelector('video');
       if (vid) vid.pause();
       existingPreview.remove();
+      card.classList.remove('is-previewing');
       return;
     }
 
@@ -265,11 +269,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const previewWrap = document.createElement('div');
     previewWrap.className = 'video-preview-wrap';
     previewWrap.innerHTML = `
-      <video class="preview-video-element" src="${safeVideoUrl}" controls autoplay playsinline></video>
       <div class="preview-header">
         <span>🎬 Playing Preview</span>
-        <button type="button" class="btn-close-preview">✕ Close</button>
+        <button type="button" class="btn-close-preview" title="Close preview">✕ Close</button>
       </div>
+      <video class="preview-video-element" src="${safeVideoUrl}" controls autoplay playsinline></video>
     `;
 
     const closeBtn = previewWrap.querySelector('.btn-close-preview');
@@ -278,9 +282,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       const vid = previewWrap.querySelector('video');
       if (vid) vid.pause();
       previewWrap.remove();
+      card.classList.remove('is-previewing');
     });
 
     card.appendChild(previewWrap);
+    card.classList.add('is-previewing');
+
+    // Ensure the video preview is fully visible in the viewport
+    function ensurePreviewVisible() {
+      previewWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    requestAnimationFrame(() => {
+      ensurePreviewVisible();
+    });
+    setTimeout(ensurePreviewVisible, 80);
+
+    const vidEl = previewWrap.querySelector('video');
+    if (vidEl) {
+      vidEl.addEventListener('loadedmetadata', ensurePreviewVisible, { once: true });
+      vidEl.addEventListener('play', ensurePreviewVisible, { once: true });
+    }
   }
 
   /**
