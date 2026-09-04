@@ -76,16 +76,16 @@ body {
 }
 
 /* ==========================================================================
-   Header
+   Header - Compact Sleek Bar
    ========================================================================== */
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 18px;
+  padding: 7px 14px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
-  box-shadow: 0 4px 10px rgba(175, 169, 157, 0.25);
+  box-shadow: 0 2px 8px rgba(175, 169, 157, 0.2);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -94,24 +94,24 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .brand-logo {
-  width: 34px;
-  height: 34px;
+  width: 25px;
+  height: 25px;
   background: linear-gradient(135deg, #25a4f4 0%, #1282cb 100%);
-  border-radius: var(--radius-md);
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 3px 3px 8px rgba(18, 130, 203, 0.35), -2px -2px 6px var(--shadow-light);
+  box-shadow: 2px 2px 5px rgba(18, 130, 203, 0.35), -1px -1px 4px var(--shadow-light);
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .logo-icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   fill: #ffffff;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
@@ -122,26 +122,24 @@ body {
 }
 
 .brand-title {
-  font-size: 14.5px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-main);
 }
 
 .brand-subtitle {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
+  display: none;
 }
 
 /* Status Badge - Debossed Neumorphic Well */
 .status-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 5px;
+  padding: 3px 8px;
   border-radius: var(--radius-full);
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 700;
   background: var(--bg-primary);
   box-shadow: var(--nm-pressed-sm);
@@ -158,22 +156,26 @@ body {
 }
 
 .status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 6px currentColor;
 }
 
 /* ==========================================================================
-   Mode Switcher Tabs - Tactile Extruded/Debossed Switch
+   Mode Switcher Tabs - Sleek Segmented Neumorphic Track
    ========================================================================== */
 .mode-tabs {
   display: flex;
   background: var(--bg-primary);
-  padding: 8px 16px;
-  gap: 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 3px;
+  margin: 6px 14px 0 14px;
+  gap: 3px;
+  border-radius: 10px;
+  box-shadow: var(--nm-pressed-sm);
+  border: 1px solid var(--border-light);
+  border-bottom: none;
 }
 
 .mode-tab {
@@ -181,14 +183,15 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--nm-raised-sm);
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   color: var(--text-muted);
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -197,17 +200,15 @@ body {
 
 .mode-tab:hover {
   color: var(--text-main);
-  box-shadow: var(--nm-raised-hover);
-  transform: translateY(-1px);
 }
 
 .mode-tab.active {
   background: var(--bg-primary);
   color: var(--accent-blue-dark);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: var(--nm-pressed);
-  font-weight: 800;
-  transform: translateY(0);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--nm-raised-sm);
+  font-weight: 700;
+  transform: none;
 }
 
 .mode-tab.active .mode-tab-icon {
@@ -216,8 +217,8 @@ body {
 }
 
 .mode-tab-icon {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   fill: currentColor;
 }
 
@@ -232,153 +233,38 @@ body {
 
 /* View Panels */
 .view-panel {
-  padding: 14px 16px;
+  padding: 8px 14px 10px 14px;
   flex: 1;
 }
 
 /* ==========================================================================
-   Top Stats & Control Bar
+   Compact Toolbar Row (Search + Scan Feed + Clear)
    ========================================================================== */
-.stats-control-bar {
+.toolbar-search-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.stat-card {
-  flex: 1;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--nm-raised);
-  border-radius: var(--radius-lg);
-  padding: 11px 15px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.stat-count-pill {
-  background: linear-gradient(135deg, #25a4f4 0%, #1282cb 100%);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 800;
-  padding: 5px 13px;
-  border-radius: var(--radius-full);
-  box-shadow: 2px 2px 6px rgba(18, 130, 203, 0.35), -2px -2px 6px var(--shadow-light);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-text-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-text-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.stat-text-sub {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.control-actions {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: var(--radius-md);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  outline: none;
-}
-
-.btn-card-action {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--nm-raised-sm);
-  color: var(--text-main);
-  padding: 10px 14px;
-}
-
-.btn-card-action:hover {
-  color: var(--accent-red);
-  box-shadow: var(--nm-raised-hover);
-  transform: translateY(-1px);
-}
-
-.btn-card-action:active {
-  box-shadow: var(--nm-pressed-sm);
-  transform: translateY(0);
-}
-
-.btn-primary-action {
-  background: linear-gradient(135deg, #25a4f4 0%, #1181cc 100%);
-  color: #ffffff;
-  padding: 10px 16px;
-  box-shadow: 3px 3px 8px rgba(17, 129, 204, 0.4), -2px -2px 6px var(--shadow-light);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.btn-primary-action:hover {
-  background: linear-gradient(135deg, #3bb1fa 0%, #158ddb 100%);
-  box-shadow: 4px 4px 12px rgba(17, 129, 204, 0.5), -3px -3px 8px var(--shadow-light);
-  transform: translateY(-1px);
-}
-
-.btn-primary-action:active {
-  box-shadow: inset 2px 2px 5px rgba(10, 80, 130, 0.55), inset -1px -1px 3px rgba(255, 255, 255, 0.3);
-  transform: translateY(0);
-}
-
-.action-icon {
-  width: 15px;
-  height: 15px;
-  fill: currentColor;
-}
-
-/* ==========================================================================
-   Quick Text Search Row - Neumorphic Recessed Input
-   ========================================================================== */
-.video-search-row {
-  margin-bottom: 11px;
+  gap: 7px;
+  margin-bottom: 7px;
 }
 
 .search-input-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  flex: 1;
 }
 
 .search-input {
   width: 100%;
-  height: 37px;
-  padding: 0 34px 0 34px;
+  height: 31px;
+  padding: 0 28px 0 28px;
   background-color: var(--bg-primary);
   color: var(--text-main);
   font-family: var(--font-family);
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 500;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
+  border-radius: 9px;
   box-shadow: var(--nm-pressed-sm);
   outline: none;
   transition: all 0.2s ease;
@@ -386,7 +272,7 @@ body {
 
 .search-input::placeholder {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .search-input:focus {
@@ -396,9 +282,9 @@ body {
 
 .search-icon {
   position: absolute;
-  left: 11px;
-  width: 15px;
-  height: 15px;
+  left: 8px;
+  width: 13px;
+  height: 13px;
   fill: var(--text-muted);
   pointer-events: none;
   transition: fill 0.2s ease;
@@ -410,9 +296,9 @@ body {
 
 .btn-search-clear {
   position: absolute;
-  right: 8px;
-  width: 22px;
-  height: 22px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
   border-radius: 50%;
@@ -439,33 +325,105 @@ body {
 }
 
 .btn-search-clear svg {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+}
+
+/* Compact Toolbar Action Buttons */
+.btn-action-refresh {
+  height: 31px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  cursor: pointer;
+  background: linear-gradient(135deg, #25a4f4 0%, #1181cc 100%);
+  color: #ffffff;
+  box-shadow: 2px 2px 6px rgba(17, 129, 204, 0.35), -1px -1px 4px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.btn-action-refresh:hover {
+  background: linear-gradient(135deg, #3bb1fa 0%, #158ddb 100%);
+  transform: translateY(-1px);
+}
+
+.btn-action-refresh:active {
+  box-shadow: inset 1px 1px 4px rgba(10, 80, 130, 0.5);
+  transform: translateY(0);
+}
+
+.btn-action-clear {
+  height: 31px;
+  width: 31px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  cursor: pointer;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  box-shadow: var(--nm-raised-sm);
+  border: 1px solid var(--border-light);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.btn-action-clear:hover {
+  color: var(--accent-red);
+  box-shadow: var(--nm-raised-hover);
+  transform: translateY(-1px);
+}
+
+.btn-action-clear:active {
+  box-shadow: var(--nm-pressed-sm);
+  transform: translateY(0);
+}
+
+.action-icon {
+  width: 13px;
+  height: 13px;
   fill: currentColor;
 }
 
 /* ==========================================================================
-   Filter Chips Row - Neumorphic Badges
+   Filter & Live Count Row
    ========================================================================== */
-.filter-chips-row {
+.filter-count-row {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-bottom: 14px;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.filter-chips-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
+  height: 24px;
+  padding: 0 9px;
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
   box-shadow: var(--nm-raised-sm);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
@@ -487,18 +445,51 @@ body {
 }
 
 .chip-icon {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   fill: currentColor;
 }
 
 .chip-badge-text {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 800;
   border: 1px solid currentColor;
   padding: 0 3px;
-  border-radius: 4px;
-  line-height: 1.2;
+  border-radius: 3px;
+  line-height: 1.1;
+}
+
+/* Live Count Indicator Pill */
+.count-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-primary);
+  padding: 2px 7px;
+  border-radius: 12px;
+  box-shadow: var(--nm-pressed-sm);
+  border: 1px solid var(--border-light);
+}
+
+.count-indicator .stat-count-pill {
+  background: linear-gradient(135deg, #25a4f4 0%, #1282cb 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 7px;
+  height: 18px;
+  border-radius: 9px;
+  box-shadow: 1px 1px 4px rgba(18, 130, 203, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.count-indicator .count-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 /* ==========================================================================
@@ -624,11 +615,11 @@ body {
 .video-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  max-height: 440px;
+  gap: 11px;
+  max-height: 455px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 10px 12px 10px;
+  padding: 4px 8px 8px 8px;
 }
 
 /* Neumorphic Scrollbar */
@@ -1085,11 +1076,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 18px;
+  padding: 6px 14px;
   background: var(--bg-primary);
   border-top: 1px solid var(--border-light);
-  box-shadow: 0 -3px 8px rgba(175, 169, 157, 0.2);
-  font-size: 11px;
+  box-shadow: 0 -2px 6px rgba(175, 169, 157, 0.18);
+  font-size: 10.5px;
   color: var(--text-muted);
 }
 
