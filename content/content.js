@@ -796,24 +796,15 @@
   }
 
   /**
-   * Locates a post element in the DOM (searching current DOM and incrementally scrolling feed if virtualized)
-   * and smoothly scrolls to it with a highlight effect
+   * Locates a post element in the DOM on X (Twitter) and smoothly scrolls to it with a highlight effect
    */
   async function scrollToPost(payload) {
-    if (!payload) return false;
+    if (!payload || isThreads) return false;
 
-    const { tweetId, authorHandle, authorName, tweetText, poster, platform } = payload;
-    const isThreadsPlatform = isThreads || platform === 'Threads' || location.hostname.includes('threads');
+    const { tweetId, authorHandle, authorName, tweetText, poster } = payload;
 
     function resolvePostContainer(el) {
       if (!el) return null;
-      if (isThreadsPlatform) {
-        return el.closest('div[data-pressable-container="true"]') ||
-               el.closest('article') ||
-               el.closest('div[role="article"]') ||
-               el.closest('[data-twitvid-post-id]') ||
-               el;
-      }
       return el.closest('article[data-testid="tweet"]') ||
              el.closest('article') ||
              el.closest('div[data-testid="cellInnerDiv"]') ||
@@ -822,12 +813,11 @@
     }
 
     function findPostInCurrentDOM() {
-      const rawId = String(tweetId || '').trim();
-      const cleanId = rawId.replace(/^threads_/, '');
+      const cleanId = String(tweetId || '').trim();
 
       // 1. Tagged post attribute (fastest & most accurate)
-      if (rawId) {
-        const tagged = document.querySelector(`[data-twitvid-post-id="${rawId}"], [data-twitvid-post-id="${cleanId}"]`);
+      if (cleanId) {
+        const tagged = document.querySelector(`[data-twitvid-post-id="${cleanId}"]`);
         if (tagged) return tagged;
       }
 
@@ -867,9 +857,7 @@
           .map(w => w.trim().toLowerCase())
           .filter(w => w.length >= 4);
 
-        const postSelector = isThreadsPlatform
-          ? 'div[data-pressable-container="true"], article, div[role="article"]'
-          : 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
+        const postSelector = 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
         const posts = Array.from(document.querySelectorAll(postSelector));
 
         if (words.length >= 2) {
@@ -895,9 +883,7 @@
       if (authorHandle) {
         const cleanHandle = authorHandle.replace(/^@/, '').toLowerCase();
         if (!['user', 'media', 'post'].includes(cleanHandle)) {
-          const postSelector = isThreadsPlatform
-            ? 'div[data-pressable-container="true"], article, div[role="article"]'
-            : 'article[data-testid="tweet"]';
+          const postSelector = 'article[data-testid="tweet"]';
           const posts = document.querySelectorAll(postSelector);
           for (const p of posts) {
             const link = p.querySelector(`a[href*="/${cleanHandle}"]`);

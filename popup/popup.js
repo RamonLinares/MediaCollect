@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
           </div>
           <div class="card-info">
-            <div class="card-text-group" title="Click to view post on page">
+            <div class="card-text-group ${isXDomain ? 'is-scrollable' : ''}" ${isXDomain ? 'title="Click to view post on page"' : ''}>
               <div class="card-author-title">${safeAuthorTitle}</div>
               <div class="card-text">${safeTweetText}</div>
             </div>
@@ -489,9 +489,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectEl.addEventListener('change', (e) => e.stopPropagation());
       }
 
-      // Click on text group to scroll the webpage feed to that post
+      // Click on text group to scroll the webpage feed to that post (strictly enabled on X)
       const textGroup = card.querySelector('.card-text-group');
-      if (textGroup) {
+      if (textGroup && isXDomain) {
         textGroup.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (!tab?.id) return;
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             authorName: v.authorName,
             tweetText: v.tweetText,
             poster: v.poster,
-            platform: v.platform || (isThreadsDomain ? 'Threads' : 'X')
+            platform: 'X'
           };
 
           const scrollTask = (async () => {
@@ -522,17 +522,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               const results = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 func: async (data) => {
-                  const isThreads = data.platform === 'Threads' || location.hostname.includes('threads');
-
                   function resolvePostContainer(el) {
                     if (!el) return null;
-                    if (isThreads) {
-                      return el.closest('div[data-pressable-container="true"]') ||
-                             el.closest('article') ||
-                             el.closest('div[role="article"]') ||
-                             el.closest('[data-twitvid-post-id]') ||
-                             el;
-                    }
                     return el.closest('article[data-testid="tweet"]') ||
                            el.closest('article') ||
                            el.closest('div[data-testid="cellInnerDiv"]') ||
@@ -541,12 +532,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                   }
 
                   function findInDOM() {
-                    const rawId = String(data.tweetId || '').trim();
-                    const cleanId = rawId.replace(/^threads_/, '');
+                    const cleanId = String(data.tweetId || '').trim();
 
                     // A. Tagged post ID
-                    if (rawId) {
-                      const tagged = document.querySelector(`[data-twitvid-post-id="${rawId}"], [data-twitvid-post-id="${cleanId}"]`);
+                    if (cleanId) {
+                      const tagged = document.querySelector(`[data-twitvid-post-id="${cleanId}"]`);
                       if (tagged) return tagged;
                     }
 
@@ -585,10 +575,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .map(w => w.trim().toLowerCase())
                         .filter(w => w.length >= 4);
 
-                      const selector = isThreads
-                        ? 'div[data-pressable-container="true"], article, div[role="article"]'
-                        : 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
-                      const posts = Array.from(document.querySelectorAll(selector));
+                      const posts = Array.from(document.querySelectorAll('article[data-testid="tweet"], div[data-testid="cellInnerDiv"]'));
 
                       if (words.length >= 2) {
                         const topWords = words.slice(0, 4);
@@ -609,10 +596,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (data.authorHandle) {
                       const h = data.authorHandle.replace(/^@/, '').toLowerCase();
                       if (!['user', 'media', 'post'].includes(h)) {
-                        const selector = isThreads
-                          ? 'div[data-pressable-container="true"], article, div[role="article"]'
-                          : 'article[data-testid="tweet"]';
-                        const posts = document.querySelectorAll(selector);
+                        const posts = document.querySelectorAll('article[data-testid="tweet"]');
                         for (const p of posts) {
                           const link = p.querySelector(`a[href*="/${h}"]`);
                           if (link || (p.innerText && p.innerText.toLowerCase().includes(`@${h}`))) {
