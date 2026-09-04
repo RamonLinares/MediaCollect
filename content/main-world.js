@@ -129,8 +129,13 @@
       obj.tweet?.core?.user_results?.result?.legacy,
       obj.tweet?.core?.user_results?.result?.core,
       obj.tweet?.core?.user_results?.result,
+      obj.retweeted_status_result?.result?.core?.user_results?.result?.legacy,
       obj.retweeted_status_result?.result?.tweet?.core?.user_results?.result?.legacy,
+      obj.legacy?.retweeted_status_result?.result?.core?.user_results?.result?.legacy,
+      obj.quoted_status_result?.result?.core?.user_results?.result?.legacy,
       obj.quoted_status_result?.result?.tweet?.core?.user_results?.result?.legacy,
+      obj.legacy?.user?.legacy,
+      obj.legacy?.user,
       obj.user?.legacy,
       obj.user,
       obj.author?.legacy,
@@ -148,6 +153,27 @@
     if (!screen_name && (obj.screen_name || obj.username)) screen_name = obj.screen_name || obj.username;
     if (!name && (obj.name || obj.full_name)) name = obj.name || obj.full_name;
 
+    // Deep search if still missing
+    if (!screen_name || !name) {
+      function scanForUser(o, d = 0) {
+        if (!o || typeof o !== 'object' || d > 6) return null;
+        if (o.screen_name && typeof o.screen_name === 'string' && o.screen_name.length > 0) {
+          return { name: o.name || o.screen_name, screen_name: o.screen_name };
+        }
+        for (const k of Object.keys(o)) {
+          if (k === 'user_mentions' || k === 'entities' || k === 'hashtags') continue;
+          const res = scanForUser(o[k], d + 1);
+          if (res) return res;
+        }
+        return null;
+      }
+      const scanned = scanForUser(obj);
+      if (scanned) {
+        if (!screen_name) screen_name = scanned.screen_name;
+        if (!name) name = scanned.name;
+      }
+    }
+
     return { name, screen_name };
   }
 
@@ -155,7 +181,7 @@
    * Processes a Tweet object from Twitter GraphQL / API
    */
   function extractFromTweetObject(tweetObj, foundRecords = []) {
-    if (!tweetObj || typeof tweetObj !== 'object') return;
+    if (!tweetObj || typeof tweetObj !== 'object') return null;
 
     let tweet = tweetObj;
     if (tweetObj.__typename === 'TweetWithVisibilityResults' && tweetObj.tweet) {
@@ -188,6 +214,8 @@
                       legacy.entities?.media ||
                       tweet.entities?.media ||
                       [];
+
+    let lastRecord = null;
 
     for (const media of mediaList) {
       if (media.video_info && Array.isArray(media.video_info.variants)) {
@@ -224,20 +252,35 @@
           if (finalTweetId) interceptedVideos.set(finalTweetId, record);
           if (media.id_str) interceptedVideos.set(media.id_str, record);
           foundRecords.push(record);
+          lastRecord = record;
         }
       }
     }
+
+    // Check for retweeted or quoted tweet media if direct media is missing or in addition
+    const retarget = legacy.retweeted_status_result?.result || tweet.retweeted_status_result?.result;
+    if (retarget) {
+      const rec = extractFromTweetObject(retarget.tweet || retarget, foundRecords);
+      if (rec && !lastRecord) lastRecord = rec;
+    }
+    const quoted = legacy.quoted_status_result?.result || tweet.quoted_status_result?.result;
+    if (quoted) {
+      const rec = extractFromTweetObject(quoted.tweet || quoted, foundRecords);
+      if (rec && !lastRecord) lastRecord = rec;
+    }
+
+    return lastRecord;
   }
 
   /**
    * Processes a Threads Post object from Threads GraphQL / API
    */
   function extractFromThreadsPost(postObj, foundRecords = []) {
-    if (!postObj || typeof postObj !== 'object') return;
+    if (!postObj || typeof postObj !== 'object') return null;
 
     const post = postObj.post || postObj;
     const code = post.code || post.id || post.pk;
-    if (!code) return;
+    if (!code) return null;
 
     const { name: authorName, screen_name: authorHandle } = extractUserInfo(post);
     const captionText = post.caption?.text || post.text || '';
@@ -245,35 +288,15 @@
 
     let poster = '';
     if (post.image_versions2?.candidates?.length > 0) {
-      poster = post.image_versions2.candidates[0].url;
+      poster = post.image_versions2.candidates[0].url || '';
     }
 
-    // Direct video_versions
-    let variants = [];
-    if (Array.isArray(post.video_versions) && post.video_versions.length > 0) {
-      variants = extractMp4Variants(post.video_versions);
-    }
-
-    // Carousel media
-    if (Array.isArray(post.carousel_media)) {
-      for (const item of post.carousel_media) {
-        if (Array.isArray(item.video_versions) && item.video_versions.length > 0) {
-          const subVariants = extractMp4Variants(item.video_versions);
-          if (subVariants.length > 0 && variants.length === 0) {
-            variants = subVariants;
-            if (!poster && item.image_versions2?.candidates?.length > 0) {
-              poster = item.image_versions2.candidates[0].url;
-            }
-          }
-        }
-      }
-    }
-
+    const variants = extractMp4Variants(post.video_versions || []);
     if (variants.length > 0) {
       const record = {
-        tweetId: String(code),
-        mediaId: String(code),
-        authorName: authorName || (authorHandle ? authorHandle : 'Threads Post'),
+        tweetId: `threads_${code}`,
+        mediaId: `threads_${code}`,
+        authorName: authorName || (authorHandle ? authorHandle : ''),
         authorHandle: authorHandle || '',
         tweetText: captionText,
         poster,
@@ -283,47 +306,53 @@
         timestamp: Date.now()
       };
 
-      interceptedVideos.set(String(code), record);
+      interceptedVideos.set(`threads_${code}`, record);
       foundRecords.push(record);
+      return record;
     }
+    return null;
   }
 
   /**
    * Recursively traverses JSON objects with cyclical guard up to depth 35
    */
-  function traverseJson(obj, foundRecords = [], visited = new WeakSet(), depth = 0) {
+  function traverseJson(obj, foundRecords = [], visited = new WeakSet(), depth = 0, parentContext = null) {
     if (!obj || typeof obj !== 'object' || depth > 35) return foundRecords;
     if (visited.has(obj)) return foundRecords;
     visited.add(obj);
 
+    let activeContext = parentContext;
+
     // Twitter / X tweet objects
     if (obj.rest_id && (obj.core || obj.legacy || obj.__typename === 'Tweet' || obj.__typename === 'TweetWithVisibilityResults')) {
-      extractFromTweetObject(obj, foundRecords);
+      const rec = extractFromTweetObject(obj, foundRecords);
+      if (rec) activeContext = rec;
     } else if (obj.legacy && (obj.legacy.extended_entities || obj.legacy.full_text)) {
-      extractFromTweetObject(obj, foundRecords);
+      const rec = extractFromTweetObject(obj, foundRecords);
+      if (rec) activeContext = rec;
     } else if (obj.video_info && Array.isArray(obj.video_info.variants)) {
       const variants = extractMp4Variants(obj.video_info.variants);
       if (variants.length > 0) {
-        let extractedHandle = '';
-        let extractedName = '';
+        let extractedHandle = activeContext?.authorHandle || '';
+        let extractedName = activeContext?.authorName || '';
         const urlToCheck = obj.expanded_url || obj.url || '';
-        if (urlToCheck) {
+        if (!extractedHandle && urlToCheck) {
           const match = urlToCheck.match(/(?:twitter\.com|x\.com)\/([^/?#]+)\/status\/(\d+)/i);
           if (match && !['i', 'home', 'explore', 'notifications'].includes(match[1])) {
             extractedHandle = match[1];
-            extractedName = match[1];
+            if (!extractedName) extractedName = match[1];
           }
         }
 
-        const tweetId = obj.id_str || obj.source_status_id_str || (urlToCheck.match(/status\/(\d+)/)?.[1]);
+        const tweetId = activeContext?.tweetId || (urlToCheck.match(/status\/(\d+)/)?.[1]) || obj.source_status_id_str || obj.id_str;
         const record = {
           tweetId: tweetId || `vid_${Date.now()}`,
           mediaId: obj.id_str,
           authorName: extractedName || extractedHandle || '',
           authorHandle: extractedHandle || '',
-          tweetText: '',
-          poster: obj.media_url_https || obj.media_url || '',
-          durationMs: obj.video_info.duration_millis || 0,
+          tweetText: activeContext?.tweetText || '',
+          poster: obj.media_url_https || obj.media_url || activeContext?.poster || '',
+          durationMs: obj.video_info.duration_millis || activeContext?.durationMs || 0,
           platform: 'X',
           variants,
           timestamp: Date.now()
@@ -336,19 +365,21 @@
 
     // Threads post objects
     if (obj.video_versions && Array.isArray(obj.video_versions) && (obj.code || obj.pk || obj.user)) {
-      extractFromThreadsPost(obj, foundRecords);
+      const rec = extractFromThreadsPost(obj, foundRecords);
+      if (rec) activeContext = rec;
     } else if (obj.post && typeof obj.post === 'object' && (obj.post.video_versions || obj.post.code)) {
-      extractFromThreadsPost(obj.post, foundRecords);
+      const rec = extractFromThreadsPost(obj.post, foundRecords);
+      if (rec) activeContext = rec;
     }
 
     if (Array.isArray(obj)) {
       for (let i = 0; i < obj.length; i++) {
-        traverseJson(obj[i], foundRecords, visited, depth + 1);
+        traverseJson(obj[i], foundRecords, visited, depth + 1, activeContext);
       }
     } else {
       for (const key of Object.keys(obj)) {
         if (key === '__proto__' || key === 'prototype') continue;
-        traverseJson(obj[key], foundRecords, visited, depth + 1);
+        traverseJson(obj[key], foundRecords, visited, depth + 1, activeContext);
       }
     }
 

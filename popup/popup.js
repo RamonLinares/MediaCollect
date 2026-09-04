@@ -308,11 +308,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (authorInfo.authorName) {
         authorTitle = authorInfo.authorName.startsWith('@') ? authorInfo.authorName : `@${authorInfo.authorName}`;
       } else {
-        const textMatch = (v.tweetText || '').match(/^@([A-Za-z0-9_]{1,25})/);
-        if (textMatch) {
-          authorTitle = `@${textMatch[1]}`;
+        const textMention = (v.tweetText || '').match(/@([A-Za-z0-9_]{1,25})/);
+        const tabAccount = tabUrl.match(/(?:twitter\.com|x\.com)\/([^/?#]+)/i);
+        const validTabAccount = (tabAccount && !['home', 'explore', 'notifications', 'messages', 'i', 'search'].includes(tabAccount[1])) ? tabAccount[1] : null;
+
+        if (textMention) {
+          authorTitle = `@${textMention[1]}`;
+        } else if (validTabAccount) {
+          authorTitle = `@${validTabAccount}`;
+        } else if (v.tweetText && v.tweetText.length > 5 && !v.tweetText.includes('Video from current')) {
+          const firstPhrase = v.tweetText.split(/[.\n!?]/)[0].trim().slice(0, 35);
+          authorTitle = firstPhrase || (validTabAccount ? `@${validTabAccount}` : 'Media');
         } else {
-          authorTitle = v.platform ? `${v.platform} Video` : 'Social Video';
+          authorTitle = validTabAccount ? `@${validTabAccount}` : 'Media';
         }
       }
       const tweetText = v.tweetText || 'Video from current feed / post.';
@@ -425,6 +433,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       videoList.appendChild(card);
+
+      // Asynchronously enrich author info & text via syndication API if handle is missing and we have a numeric tweetId
+      if (!authorInfo.authorHandle && /^\d+$/.test(v.tweetId)) {
+        chrome.runtime.sendMessage({
+          type: 'FETCH_TWEET_MEDIA_FALLBACK',
+          payload: { tweetId: v.tweetId }
+        }).then(res => {
+          if (res?.videoData) {
+            const data = res.videoData;
+            const norm = TwitVidUtils.normalizeAuthorInfo(data.authorName, data.authorHandle);
+            let updatedTitle = '';
+            if (norm.authorName && norm.authorHandle && norm.authorName.toLowerCase() !== norm.authorHandle.toLowerCase()) {
+              updatedTitle = `${norm.authorName} (@${norm.authorHandle})`;
+            } else if (norm.authorHandle) {
+              updatedTitle = `@${norm.authorHandle}`;
+            } else if (norm.authorName) {
+              updatedTitle = norm.authorName.startsWith('@') ? norm.authorName : `@${norm.authorName}`;
+            }
+            if (updatedTitle) {
+              const titleEl = card.querySelector('.card-author-title');
+              if (titleEl) titleEl.textContent = updatedTitle;
+              v.authorName = norm.authorName;
+              v.authorHandle = norm.authorHandle;
+            }
+            if (data.tweetText && (!v.tweetText || v.tweetText.includes('Video from current'))) {
+              const textEl = card.querySelector('.card-text');
+              if (textEl) textEl.textContent = data.tweetText;
+              v.tweetText = data.tweetText;
+            }
+            if (tab?.id) {
+              chrome.runtime.sendMessage({
+                type: 'STORE_PAGE_VIDEOS',
+                payload: { tabId: tab.id, videos: [v] }
+              }).catch(() => {});
+            }
+          }
+        }).catch(() => {});
+      }
     }
   }
 

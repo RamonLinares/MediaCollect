@@ -267,7 +267,20 @@
       }
     }
 
-    // 3. Status links -> extract screen_name and tweet ID
+    // 3. Time element permalink link -> definitive screen_name and tweet ID
+    const timeLink = tweetElement.querySelector('time')?.closest('a');
+    if (timeLink) {
+      const href = timeLink.getAttribute('href') || '';
+      const match = href.match(/(?:twitter\.com|x\.com)?\/([^/?#]+)\/status\/(\d+)/i);
+      if (match) {
+        if (!['i', 'home', 'explore', 'notifications', 'messages'].includes(match[1])) {
+          if (!authorHandle) authorHandle = match[1];
+        }
+        if (!tweetId) tweetId = match[2];
+      }
+    }
+
+    // 4. Status links -> extract screen_name and tweet ID
     const statusLinks = tweetElement.querySelectorAll('a[href*="/status/"]');
     for (const a of statusLinks) {
       const href = a.getAttribute('href') || '';
@@ -286,23 +299,49 @@
       }
     }
 
-    // 4. Fallback handle from any user link in tweet
-    if (!authorHandle) {
-      const userLink = tweetElement.querySelector('a[href^="/"][role="link"], a[href^="/"]');
-      if (userLink) {
-        const href = userLink.getAttribute('href') || '';
-        const clean = href.replace(/^\//, '').split('/')[0].split('?')[0];
-        if (clean && !['home', 'explore', 'notifications', 'messages', 'i'].includes(clean)) {
-          authorHandle = clean;
+    // 4. Scan all internal links in the post (the first profile link is always the author)
+    if (!authorHandle || !authorName) {
+      const allLinks = tweetElement.querySelectorAll('a[href^="/"]');
+      for (const link of allLinks) {
+        const href = link.getAttribute('href') || '';
+        const parts = href.replace(/^\//, '').split('/');
+        const candidate = parts[0].split('?')[0];
+        if (candidate && !['home', 'explore', 'notifications', 'messages', 'i', 'search', 'hashtag', 'settings', 'tos', 'privacy'].includes(candidate.toLowerCase())) {
+          if (!authorHandle) authorHandle = candidate;
+          const text = link.innerText.trim();
+          if (text && !authorName && !text.startsWith('@') && !TwitVidUtils.isGenericAuthor(text)) {
+            authorName = text;
+          }
+          if (authorHandle && authorName) break;
         }
       }
     }
 
     // 5. Fallback from current page URL if on a status permalink page
-    if (!authorHandle && window.location.pathname) {
-      const pageMatch = window.location.pathname.match(/\/([^/?#]+)\/status\/\d+/i);
-      if (pageMatch && !['i', 'home', 'explore'].includes(pageMatch[1])) {
-        authorHandle = pageMatch[1];
+    if (window.location.pathname) {
+      const pageMatch = window.location.pathname.match(/\/([^/?#]+)\/status\/(\d+)/i);
+      if (pageMatch) {
+        if (!authorHandle && !['i', 'home', 'explore'].includes(pageMatch[1])) {
+          authorHandle = pageMatch[1];
+        }
+        if (!tweetId) {
+          tweetId = pageMatch[2];
+        }
+      }
+    }
+
+    // 6. Fallback from OpenGraph and page title metadata
+    if (!authorName) {
+      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+      const ogMatch = ogTitle.match(/^(.+?)\s+on\s+X\s*:/i) || document.title.match(/^(.+?)\s+on\s+X\s*:/i);
+      if (ogMatch && !TwitVidUtils.isGenericAuthor(ogMatch[1])) {
+        authorName = ogMatch[1].trim();
+      }
+    }
+    if (!authorHandle) {
+      const creator = document.querySelector('meta[name="twitter:creator"]')?.getAttribute('content');
+      if (creator && creator.startsWith('@')) {
+        authorHandle = creator.replace('@', '').trim();
       }
     }
 
@@ -697,18 +736,46 @@
           })();
           resolutionPromises.push(p);
         } else {
-          visibleVideos.push({
+          const mergedAuthorHandle = (!TwitVidUtils.isGenericAuthor(data.authorHandle) && data.authorHandle)
+            ? data.authorHandle
+            : (!TwitVidUtils.isGenericAuthor(cached.authorHandle) ? cached.authorHandle : '');
+          const mergedAuthorName = (!TwitVidUtils.isGenericAuthor(data.authorName) && data.authorName)
+            ? data.authorName
+            : (!TwitVidUtils.isGenericAuthor(cached.authorName) ? cached.authorName : '');
+
+          const item = {
             ...cached,
-            authorName: (data.authorName && !TwitVidUtils.isGenericAuthor(data.authorName))
-              ? data.authorName
-              : (!TwitVidUtils.isGenericAuthor(cached.authorName) ? cached.authorName : (data.authorHandle || cached.authorHandle || '')),
-            authorHandle: (!TwitVidUtils.isGenericAuthor(data.authorHandle) && data.authorHandle)
-              ? data.authorHandle
-              : (!TwitVidUtils.isGenericAuthor(cached.authorHandle) ? cached.authorHandle : ''),
+            authorName: mergedAuthorName,
+            authorHandle: mergedAuthorHandle,
             tweetText: data.tweetText || cached.tweetText,
             poster: data.poster || cached.poster,
             platform: data.platform || platformName
-          });
+          };
+
+          if (!isThreads && !mergedAuthorHandle && /^\d+$/.test(data.tweetId)) {
+            const p = (async () => {
+              try {
+                const res = await chrome.runtime.sendMessage({
+                  type: 'FETCH_TWEET_MEDIA_FALLBACK',
+                  payload: { tweetId: data.tweetId }
+                });
+                if (res?.videoData?.authorHandle) {
+                  item.authorHandle = res.videoData.authorHandle;
+                  if (!item.authorName || TwitVidUtils.isGenericAuthor(item.authorName)) {
+                    item.authorName = res.videoData.authorName || res.videoData.authorHandle;
+                  }
+                  if (res.videoData.tweetText && (!item.tweetText || item.tweetText.includes('Video from current'))) {
+                    item.tweetText = res.videoData.tweetText;
+                  }
+                  cached.authorHandle = item.authorHandle;
+                  cached.authorName = item.authorName;
+                }
+              } catch (_) {}
+            })();
+            resolutionPromises.push(p);
+          }
+
+          visibleVideos.push(item);
         }
       }
     }
