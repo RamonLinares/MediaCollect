@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectEl.addEventListener('change', (e) => e.stopPropagation());
       }
 
-      // Click on text group to scroll the webpage to that post
+      // Click on text group to scroll the webpage feed to that post
       const textGroup = card.querySelector('.card-text-group');
       if (textGroup) {
         textGroup.addEventListener('click', async (e) => {
@@ -507,25 +507,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             platform: v.platform || (isThreadsDomain ? 'Threads' : 'X')
           };
 
-          let scrolled = false;
+          const scrollTask = (async () => {
+            // 1. Send message to content script
+            try {
+              const resp = await chrome.tabs.sendMessage(tab.id, {
+                type: 'SCROLL_TO_POST',
+                payload
+              });
+              if (resp && resp.success) return true;
+            } catch (_) {}
 
-          // 1. Send message to content script
-          try {
-            const resp = await chrome.tabs.sendMessage(tab.id, {
-              type: 'SCROLL_TO_POST',
-              payload
-            });
-            if (resp && resp.success) {
-              scrolled = true;
-            }
-          } catch (_) {}
-
-          // 2. Direct script execution fallback (works even on tabs opened before extension update)
-          if (!scrolled) {
+            // 2. Direct script execution fallback with virtual DOM feed scanner
             try {
               const results = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
-                func: (data) => {
+                func: async (data) => {
                   const isThreads = data.platform === 'Threads' || location.hostname.includes('threads');
 
                   function resolvePostContainer(el) {
@@ -544,183 +540,174 @@ document.addEventListener('DOMContentLoaded', async () => {
                            el;
                   }
 
-                  let target = null;
-                  const tweetId = data.tweetId;
+                  function findInDOM() {
+                    const rawId = String(data.tweetId || '').trim();
+                    const cleanId = rawId.replace(/^threads_/, '');
 
-                  // A. Tagged post ID
-                  if (tweetId) {
-                    const cleanId = String(tweetId).replace(/^threads_/, '');
-                    target = document.querySelector(`[data-twitvid-post-id="${tweetId}"], [data-twitvid-post-id="${cleanId}"]`);
-                  }
+                    // A. Tagged post ID
+                    if (rawId) {
+                      const tagged = document.querySelector(`[data-twitvid-post-id="${rawId}"], [data-twitvid-post-id="${cleanId}"]`);
+                      if (tagged) return tagged;
+                    }
 
-                  // B. Link match
-                  if (!target && tweetId && !String(tweetId).startsWith('vid_')) {
-                    const cleanId = String(tweetId).replace(/^threads_/, '');
-                    if (!isThreads) {
-                      const links = document.querySelectorAll(`a[href*="/status/${cleanId}"], a[href*="${cleanId}"]`);
-                      for (const l of links) {
-                        const p = resolvePostContainer(l);
-                        if (p) { target = p; break; }
+                    // B. Link match
+                    if (cleanId && !cleanId.startsWith('vid_') && cleanId.length >= 4) {
+                      const anchors = document.querySelectorAll(`a[href*="${cleanId}"]`);
+                      for (const a of anchors) {
+                        const p = resolvePostContainer(a);
+                        if (p) return p;
                       }
-                      if (!target) {
-                        const dataEl = document.querySelector(`[data-tweet-id="${cleanId}"]`);
-                        if (dataEl) target = resolvePostContainer(dataEl);
+                      const dataEl = document.querySelector(`[data-tweet-id="${cleanId}"]`);
+                      if (dataEl) return resolvePostContainer(dataEl);
+                    }
+
+                    // C. Media poster match
+                    if (data.poster && data.poster.length > 10) {
+                      try {
+                        const filename = data.poster.split('?')[0].split('/').pop();
+                        if (filename && filename.length >= 6) {
+                          const m = document.querySelector(`img[src*="${filename}"], video[poster*="${filename}"]`);
+                          if (m) {
+                            const p = resolvePostContainer(m);
+                            if (p) return p;
+                          }
+                        }
+                      } catch (_) {}
+                    }
+
+                    // D. Words match from caption
+                    if (data.tweetText && data.tweetText.length >= 6 && !data.tweetText.includes('Video from current')) {
+                      const words = data.tweetText
+                        .replace(/https?:\/\/\S+/g, '')
+                        .replace(/[@#][\w_]+/g, '')
+                        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+                        .split(/\s+/)
+                        .map(w => w.trim().toLowerCase())
+                        .filter(w => w.length >= 4);
+
+                      const selector = isThreads
+                        ? 'div[data-pressable-container="true"], article, div[role="article"]'
+                        : 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
+                      const posts = Array.from(document.querySelectorAll(selector));
+
+                      if (words.length >= 2) {
+                        const topWords = words.slice(0, 4);
+                        for (const p of posts) {
+                          const text = (p.innerText || '').toLowerCase();
+                          const matches = topWords.filter(w => text.includes(w)).length;
+                          if (matches >= Math.min(2, topWords.length)) return p;
+                        }
                       }
-                      if (!target && window.location.pathname.includes(cleanId)) {
-                        target = document.querySelector('article[data-testid="tweet"]');
-                      }
-                    } else {
-                      const links = document.querySelectorAll(`a[href*="/post/${cleanId}"], a[href*="/t/${cleanId}"], a[href*="${cleanId}"]`);
-                      for (const l of links) {
-                        const p = resolvePostContainer(l);
-                        if (p) { target = p; break; }
+
+                      const snippet = data.tweetText.trim().slice(0, 25).toLowerCase();
+                      for (const p of posts) {
+                        if ((p.innerText || '').toLowerCase().includes(snippet)) return p;
                       }
                     }
-                  }
 
-                  // C. Media poster match
-                  if (!target && data.poster) {
-                    try {
-                      const filename = data.poster.split('?')[0].split('/').pop();
-                      if (filename && filename.length > 5) {
-                        const m = document.querySelector(`img[src*="${filename}"], video[poster*="${filename}"]`);
-                        if (m) target = resolvePostContainer(m);
+                    // E. Author handle match
+                    if (data.authorHandle) {
+                      const h = data.authorHandle.replace(/^@/, '').toLowerCase();
+                      if (!['user', 'media', 'post'].includes(h)) {
+                        const selector = isThreads
+                          ? 'div[data-pressable-container="true"], article, div[role="article"]'
+                          : 'article[data-testid="tweet"]';
+                        const posts = document.querySelectorAll(selector);
+                        for (const p of posts) {
+                          const link = p.querySelector(`a[href*="/${h}"]`);
+                          if (link || (p.innerText && p.innerText.toLowerCase().includes(`@${h}`))) {
+                            if (p.querySelector('video') || p.querySelector('img')) return p;
+                          }
+                        }
                       }
-                    } catch (_) {}
+                    }
+
+                    return null;
                   }
 
-                  // D. Words match from caption
-                  if (!target && data.tweetText && data.tweetText.length > 6) {
-                    const words = data.tweetText
-                      .replace(/https?:\/\/\S+/g, '')
-                      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-                      .split(/\s+/)
-                      .filter(w => w.length >= 4);
+                  // 1. Check current DOM
+                  let target = findInDOM();
 
-                    const selector = isThreads
-                      ? 'div[data-pressable-container="true"], article, div[role="article"]'
-                      : 'article[data-testid="tweet"], div[data-testid="cellInnerDiv"]';
-                    const posts = Array.from(document.querySelectorAll(selector));
+                  // 2. If not found in current DOM, incrementally scroll down feed to mount virtual DOM elements
+                  if (!target) {
+                    const startScrollY = window.pageYOffset || document.documentElement.scrollTop;
 
-                    if (words.length >= 2) {
-                      const topWords = words.slice(0, 4).map(w => w.toLowerCase());
-                      for (const p of posts) {
-                        const t = (p.innerText || '').toLowerCase();
-                        if (topWords.filter(w => t.includes(w)).length >= Math.min(2, topWords.length)) {
-                          target = p;
-                          break;
+                    for (let step = 0; step < 16; step++) {
+                      window.scrollBy({ top: Math.round(window.innerHeight * 0.8), behavior: 'instant' });
+                      await new Promise(r => setTimeout(r, 80));
+                      target = findInDOM();
+                      if (target) break;
+                    }
+
+                    if (!target && startScrollY > 300) {
+                      window.scrollTo({ top: 0, behavior: 'instant' });
+                      await new Promise(r => setTimeout(r, 100));
+                      target = findInDOM();
+                      if (!target) {
+                        for (let step = 0; step < 10; step++) {
+                          window.scrollBy({ top: Math.round(window.innerHeight * 0.8), behavior: 'instant' });
+                          await new Promise(r => setTimeout(r, 80));
+                          target = findInDOM();
+                          if (target) break;
                         }
                       }
                     }
 
                     if (!target) {
-                      const snippet = data.tweetText.trim().slice(0, 25);
-                      for (const p of posts) {
-                        if ((p.innerText || '').includes(snippet)) {
-                          target = p;
-                          break;
-                        }
-                      }
+                      window.scrollTo({ top: startScrollY, behavior: 'smooth' });
                     }
                   }
 
-                  // E. Author handle match
-                  if (!target && data.authorHandle) {
-                    const h = data.authorHandle.replace(/^@/, '').toLowerCase();
-                    const selector = isThreads
-                      ? 'div[data-pressable-container="true"], article, div[role="article"]'
-                      : 'article[data-testid="tweet"]';
-                    const posts = document.querySelectorAll(selector);
-                    for (const p of posts) {
-                      const link = p.querySelector(`a[href*="/${h}"]`);
-                      if (link || (p.innerText && p.innerText.toLowerCase().includes(`@${h}`))) {
-                        if (p.querySelector('video') || p.querySelector('img')) {
-                          target = p;
-                          break;
-                        }
-                      }
-                    }
-                  }
-
+                  // 3. Center on target post and apply glowing pulse
                   if (target) {
-                    // Scroll parent overflow containers if present
-                    try {
-                      let parent = target.parentElement;
-                      while (parent && parent !== document.body && parent !== document.documentElement) {
-                        const style = window.getComputedStyle(parent);
-                        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-                          const parentRect = parent.getBoundingClientRect();
-                          const elRect = target.getBoundingClientRect();
-                          const relTop = elRect.top - parentRect.top;
-                          parent.scrollTo({
-                            top: parent.scrollTop + relTop - (parent.clientHeight / 2) + (elRect.height / 2),
-                            behavior: 'smooth'
-                          });
-                        }
-                        parent = parent.parentElement;
-                      }
-                    } catch (_) {}
-
-                    // Window scroll calculation
-                    try {
-                      const rect = target.getBoundingClientRect();
-                      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                      const targetY = scrollTop + rect.top - (window.innerHeight / 2) + (rect.height / 2);
-                      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
-                    } catch (_) {}
-
-                    // Native scrollIntoView
                     try {
                       target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
                     } catch (_) {
                       try { target.scrollIntoView(true); } catch (_) {}
                     }
 
-                    // Apply high-visibility pulse highlight
+                    try {
+                      const rect = target.getBoundingClientRect();
+                      const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                      const targetY = currentScroll + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+                      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+                    } catch (_) {}
+
                     const prevOutline = target.style.outline;
                     const prevShadow = target.style.boxShadow;
                     const prevTransition = target.style.transition;
-                    target.style.transition = 'outline 0.2s ease, box-shadow 0.2s ease';
+                    const prevRadius = target.style.borderRadius;
+
+                    target.style.transition = 'outline 0.25s ease, box-shadow 0.25s ease';
                     target.style.outline = '3px solid #1d9bf0';
-                    target.style.boxShadow = '0 0 24px 8px rgba(29, 155, 240, 0.55)';
+                    target.style.boxShadow = '0 0 28px 8px rgba(29, 155, 240, 0.6)';
+                    target.style.borderRadius = '12px';
+
                     setTimeout(() => {
                       target.style.outline = prevOutline;
                       target.style.boxShadow = prevShadow;
                       target.style.transition = prevTransition;
-                    }, 2500);
+                      target.style.borderRadius = prevRadius;
+                    }, 2600);
 
-                    return { found: true };
+                    return true;
                   }
 
-                  return { found: false };
+                  return false;
                 },
                 args: [payload]
               });
 
-              if (results?.[0]?.result?.found) {
-                scrolled = true;
-              }
+              return !!(results?.[0]?.result);
             } catch (err) {
               console.warn('[MediaCollect] executeScript scroll error:', err);
+              return false;
             }
-          }
+          })();
 
-          // 3. Fallback: If post was virtualized away by infinite scroll, navigate to its permalink
-          if (!scrolled) {
-            const cleanId = String(v.tweetId || '').replace(/^threads_/, '');
-            if (!isThreadsDomain && /^\d+$/.test(cleanId)) {
-              await chrome.tabs.update(tab.id, { url: `https://x.com/i/status/${cleanId}` });
-              scrolled = true;
-            } else if (isThreadsDomain && cleanId && !cleanId.startsWith('vid_')) {
-              await chrome.tabs.update(tab.id, { url: `https://www.threads.net/t/${cleanId}` });
-              scrolled = true;
-            }
-          }
-
-          // Close popup immediately so user focuses on the centered & highlighted post on the webpage
-          setTimeout(() => {
-            window.close();
-          }, 100);
+          // Allow scroll process to kick off and close popup to grant window focus to the webpage
+          await Promise.race([scrollTask, new Promise(r => setTimeout(r, 180))]);
+          window.close();
         });
       }
 
